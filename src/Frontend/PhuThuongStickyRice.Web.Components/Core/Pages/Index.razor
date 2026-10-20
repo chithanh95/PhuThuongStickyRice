@@ -21,7 +21,7 @@
 @inject ShopEngagementService ShopEngagementService
 @inject Microsoft.JSInterop.IJSRuntime JSRuntime
 @inject NavigationManager Navigation
-@inject AppI18n AppI18n
+@inject AppLocalizationService AppLocalizationService
 @inject FunnelService Funnel
 @implements IDisposable
 
@@ -107,11 +107,11 @@ else
         </a>
         <input type="checkbox" id="sg-nav-toggle" class="sg-nav-checkbox" />
         <nav class="sg-nav">
-            <a href="#gioi-thieu">@AppI18n.Translate("nav.about")</a>
-            <a href="/shop">@AppI18n.Translate("nav.signature")</a>
-            <a href="#thuc-don">@AppI18n.Translate("nav.menu")</a>
-            <a href="/dat-so-luong-lon">@AppI18n.Translate("nav.bulk_order")</a>
-            <a href="#lien-he">@AppI18n.Translate("nav.contact")</a>
+            <a href="#gioi-thieu">@AppLocalizationService.Translate("nav.about")</a>
+            <a href="/shop">@AppLocalizationService.Translate("nav.signature")</a>
+            <a href="#thuc-don">@AppLocalizationService.Translate("nav.menu")</a>
+            <a href="/dat-so-luong-lon">@AppLocalizationService.Translate("nav.bulk_order")</a>
+            <a href="#lien-he">@AppLocalizationService.Translate("nav.contact")</a>
         </nav>
         <div class="sg-header-right">
             <div class="sg-lang-dropdown">
@@ -126,7 +126,7 @@ else
             }
             else
             {
-                <a class="sg-hotline" href="/shop">@AppI18n.Translate("nav.order_now")</a>
+                <a class="sg-hotline" href="/shop">@AppLocalizationService.Translate("nav.order_now")</a>
             }
             <label for="sg-nav-toggle" class="sg-hamburger" aria-label="Menu"><span></span><span></span><span></span></label>
         </div>
@@ -1193,11 +1193,11 @@ else
     protected override async Task OnInitializedAsync()
     {
         try { _isDark = await JSRuntime.InvokeAsync<bool>("ptIsDark", "pt-theme-shop"); } catch { }
-        AppI18n.OnChange -= OnLangChanged;
-        AppI18n.OnChange += OnLangChanged;
+        AppLocalizationService.OnChange -= OnLangChanged;
+        AppLocalizationService.OnChange += OnLangChanged;
         CartState.OnChange -= OnCartChanged;
         CartState.OnChange += OnCartChanged;
-        await AppI18n.InitializeAsync();
+        await AppLocalizationService.InitializeAsync();
         Funnel.Track(FunnelService.Events.LandingView, new Uri(Navigation.Uri).AbsolutePath);
 
         // perf-hunt 2026-10-19 (run 20:25): 17 HTTP request độc lập → chạy song
@@ -1695,7 +1695,7 @@ else
 
     private string CountdownEndIso => _content.PromoCountdownEnd?.ToString("o");
 
-    private string T(string vi, string en) => AppI18n.CurrentLanguage == "en" ? en : vi;
+    private string T(string vi, string en) => AppLocalizationService.CurrentLanguage == "en" ? en : vi;
 
     private string GreetingByHour
     {
@@ -1728,7 +1728,7 @@ else
 
     public void Dispose()
     {
-        AppI18n.OnChange -= OnLangChanged;
+        AppLocalizationService.OnChange -= OnLangChanged;
         CartState.OnChange -= OnCartChanged;
     }
 }

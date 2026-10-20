@@ -1,3 +1,7 @@
+@* Báo cáo lãi gộp theo món (admin): doanh thu − giá vốn theo khoảng ngày, kèm bảng
+   sửa giá vốn trực tiếp. LƯU Ý: sửa giá vốn chỉ lưu giá món — phải bấm "Xem báo cáo"
+   để tải lại số liệu (server tính lại theo giá vốn mới). Màu biên lợi nhuận:
+   xanh ≥50%, vàng ≥20%, đỏ <20% (xem MarginStyle). *@
 @page "/admin/lai-gop"
 @attribute [Authorize(Roles = "Admin")]
 @using PhuThuongStickyRice.Web.Components.Orders.Models
@@ -317,6 +321,11 @@ else if (_report != null)
 
     private static string FmtPct(decimal? p) => p.HasValue ? p.Value.ToString("N1") + "%" : "–";
 
+    /// <summary>
+    /// Màu nền badge biên lợi nhuận theo 2 ngưỡng: xanh lá ≥ 50% (tốt),
+    /// vàng ≥ 20% (trung bình), đỏ &lt; 20% (thấp — cần xem lại giá bán/giá vốn).
+    /// </summary>
+    /// <param name="p">Tỷ lệ lãi gộp %; null = chưa có số liệu.</param>
     private static string MarginStyle(decimal? p)
     {
         if (!p.HasValue)

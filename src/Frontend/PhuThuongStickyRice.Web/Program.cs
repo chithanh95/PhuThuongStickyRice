@@ -144,10 +144,10 @@ namespace PhuThuongStickyRice.Web
             AddApiHttpClient<AdminCommerceService>(builder, apiBaseUri);
 
             // Item 134: VI/EN dictionary for the shop pages' chrome.
-            builder.Services.AddScoped<PhuThuongStickyRice.Web.Components.Shop.Services.ShopI18n>();
+            builder.Services.AddScoped<PhuThuongStickyRice.Web.Components.Shop.Services.ShopLocalizationService>();
 
             // App-wide i18n (VI default, EN/ZH/JA) for the public web chrome.
-            builder.Services.AddScoped<PhuThuongStickyRice.Web.Components.Core.Services.AppI18n>();
+            builder.Services.AddScoped<PhuThuongStickyRice.Web.Components.Core.Services.AppLocalizationService>();
 
             // GL1: anonymous funnel measurement.
             AddApiHttpClient<PhuThuongStickyRice.Web.Components.Shop.Services.FunnelService>(builder, apiBaseUri);

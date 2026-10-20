@@ -190,20 +190,26 @@ namespace PhuThuongStickyRice.Application.Permissions
             var existingKeys = existing.Select(rp => rp.PermissionKey)
                 .ToHashSet(StringComparer.OrdinalIgnoreCase);
 
-            foreach (var row in existing.Where(rp => !wanted.Contains(rp.PermissionKey, StringComparer.OrdinalIgnoreCase)))
-            {
-                await _rolePermissions.DeleteAsync(row);
-            }
+            // Best practice: xóa/chèn hàng loạt 1 lần thay vì DeleteAsync/
+            // InsertAsync từng dòng trong vòng lặp — cùng semantics (UoW commit
+            // 1 lần cuối method như cũ), code thể hiện đúng ý định full-replace.
+            // Guid Id của dòng mới vẫn được Repository tự sinh (stamp Guid khi
+            // Id rỗng) như khi InsertAsync từng dòng trước đây.
+            var rowsToDelete = existing
+                .Where(rp => !wanted.Contains(rp.PermissionKey, StringComparer.OrdinalIgnoreCase))
+                .ToList();
+            await _rolePermissions.DeleteManyAsync(rowsToDelete);
 
-            foreach (var key in wanted.Where(k => !existingKeys.Contains(k)))
-            {
-                await _rolePermissions.InsertAsync(new RolePermission
+            var rowsToInsert = wanted
+                .Where(k => !existingKeys.Contains(k))
+                .Select(key => new RolePermission
                 {
                     Role = role,
                     PermissionKey = key,
                     CreatedAt = DateTime.UtcNow,
-                });
-            }
+                })
+                .ToList();
+            await _rolePermissions.InsertManyAsync(rowsToInsert);
         }
 
         /// <summary>

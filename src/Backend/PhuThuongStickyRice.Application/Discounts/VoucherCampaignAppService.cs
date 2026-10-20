@@ -145,7 +145,7 @@ namespace PhuThuongStickyRice.Application.Discounts
             }
 
             // Chặn đối tượng quá lớn: GenerateUniqueCodesAsync dựng toàn bộ N mã
-            // ứng viên trong 1 HashSet ở memory rồi InsertAsync N lần trong 1
+            // ứng viên trong 1 HashSet ở memory rồi InsertManyAsync 1 lần trong 1
             // UoW — 1 cú click nhầm "Tất cả khách" với base lớn có thể gây
             // OOM/timeout request.
             if (phones.Count > MaxGenerateVouchers)
@@ -162,13 +162,21 @@ namespace PhuThuongStickyRice.Application.Discounts
             // perf-hunt 2026-10-19: sinh toàn bộ mã duy nhất với 1 lần kiểm
             // tra trùng gộp (batched) thay vì 1 round-trip DB cho mỗi mã.
             var codes = await GenerateUniqueCodesAsync(prefix, phones.Count);
-            var result = new List<GeneratedVoucherDto>();
 
+            // Best practice (cùng pattern InventoryAppService.InsertLinesAsync):
+            // dựng hết entities rồi InsertManyAsync 1 lần thay vì InsertAsync
+            // từng mã trong vòng lặp — cùng semantics (UoW commit 1 lần cuối
+            // method, không SaveChanges thủ công như cũ), ý định "chèn hàng
+            // loạt" rõ ràng hơn; dữ liệu tạo ra không đổi.
+            var entities = new List<DiscountCode>(phones.Count);
+            var result = new List<GeneratedVoucherDto>(phones.Count);
             for (var i = 0; i < phones.Count; i++)
             {
-                await _discountCodes.InsertAsync(BuildVoucherCode(codes[i], phones[i], input, expiresAt));
+                entities.Add(BuildVoucherCode(codes[i], phones[i], input, expiresAt));
                 result.Add(new GeneratedVoucherDto { Phone = phones[i], Code = codes[i] });
             }
+
+            await _discountCodes.InsertManyAsync(entities);
 
             // ABP unit of work tự commit toàn bộ batch khi method kết thúc (không cần SaveChanges thủ công).
             return result;

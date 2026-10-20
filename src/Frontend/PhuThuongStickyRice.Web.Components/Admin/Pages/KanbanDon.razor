@@ -1,3 +1,7 @@
+@* Bảng kanban vận hành đơn hàng (admin/cashier/kitchen): kéo-thả đơn qua các cột
+   Chờ xác nhận → Đã xác nhận → Đang chuẩn bị → Sẵn sàng giao → Hoàn thành.
+   Tự refresh mỗi 30 giây (silent, không hiện spinner). Hủy đơn bắt buộc chọn lý do
+   (đồng bộ với backend — khách tự hủy cũng dùng danh sách này). *@
 @page "/admin/kanban-don"
 @implements IDisposable
 @attribute [Authorize(Roles = "Admin,Cashier,Kitchen")]
@@ -282,6 +286,12 @@ else
         await LoadAsync();
     }
 
+    /// <summary>
+    /// Tải danh sách đơn của khoảng thời gian đang chọn. <c>silent = true</c>
+    /// (dùng cho timer refresh) thì không hiện spinner và không ghi đè _error,
+    /// tránh nhấp nháy màn hình mỗi 30 giây.
+    /// </summary>
+    /// <param name="silent">True khi refresh nền bằng timer.</param>
     private async Task LoadAsync(bool silent = false)
     {
         if (!silent) { _loading = true; _error = null; }
@@ -306,6 +316,13 @@ else
         if (!silent) _loading = false;
     }
 
+    /// <summary>
+    /// Chuyển đơn sang trạng thái kế tiếp trên kanban. Cập nhật status lạc quan
+    /// (optimistic): lấy status server trả về, fallback về trạng thái đích nếu
+    /// server không trả status — lần refresh timer sau sẽ đồng bộ lại đúng.
+    /// </summary>
+    /// <param name="order">Đơn cần chuyển.</param>
+    /// <param name="nextStatus">Trạng thái đích (cột kế tiếp).</param>
     private async Task MoveAsync(OrderModel order, string nextStatus)
     {
         _saving = true;

@@ -121,6 +121,8 @@ namespace PhuThuongStickyRice.Application.Messenger
         // Sending limits & catalog fetch sizes (keep these named, not inline).
         private const int MenuMaxItems = 20;
         private const int ParseOrderMaxItems = 100;
+        /// <summary>Số lượng tối đa cho 1 dòng đặt món qua chat (kẹp "x 999" về trần này).</summary>
+        private const int MaxQuantityPerLine = 100;
         // [codequality-smell 2026-10-19] Magic number: độ dài tên khách tối đa
         // khi cắt ngắn tin nhắn chat trước khi tạo đơn (khớp độ dài cột DB).
         private const int MaxCustomerNameLength = 200;
@@ -608,7 +610,7 @@ namespace PhuThuongStickyRice.Application.Messenger
             var quantityMatch = QuantityRegex().Match(part);
             if (quantityMatch.Success)
             {
-                qty = Math.Max(1, Math.Min(100, int.Parse(quantityMatch.Groups[1].Value, CultureInfo.InvariantCulture)));
+                qty = Math.Max(1, Math.Min(MaxQuantityPerLine, int.Parse(quantityMatch.Groups[1].Value, CultureInfo.InvariantCulture)));
                 // CA1845: dùng span-based Concat thay cho Substring — không cấp phát chuỗi trung gian.
                 part = string.Concat(
                     part.AsSpan(0, quantityMatch.Index),

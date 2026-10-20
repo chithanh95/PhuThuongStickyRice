@@ -1,3 +1,8 @@
+@* Dashboard vận hành (admin/cashier): thẻ doanh thu/đơn hàng theo khoảng ngày (mặc định
+   7 ngày gần nhất), top món, khách mới/quay lại, so sánh hôm nay–hôm qua, món hết suất,
+   báo cáo tuần. Tự refresh nền (timer) với cơ chế fail-soft: thẻ nào lỗi thì ẩn thẻ
+   đó, không chặn cả dashboard. Có cảnh báo âm thanh + banner khi có đơn mới và khi
+   có đơn chờ quá lâu (stale-pending). *@
 @page "/dashboard"
 @attribute [Authorize(Roles = "Admin,Cashier")]
 @implements IDisposable
@@ -775,11 +780,16 @@ else
 
     }
 
+    /// <summary>
+    /// Phát hiện đơn mới để kêu "bíp" + hiện banner: so sánh tổng số đơn với
+    /// mốc baseline lần tải trước. Lần tải đầu chỉ thiết lập baseline, không báo.
+    /// </summary>
+    /// <param name="stats">Thống kê dashboard vừa tải.</param>
     private void DetectNewOrders(DashboardStatsModel stats)
     {
         if (_baselineOrderCount < 0)
         {
-            // First load: establish the baseline, no alert.
+            // Lần tải đầu: chỉ thiết lập mốc, chưa báo đơn mới.
             _baselineOrderCount = stats.TotalOrders;
             return;
         }
@@ -811,9 +821,11 @@ else
     }
 
     /// <summary>
-    /// Item 86: distinct urgent sound + banner when stale pending orders
-    /// appear or grow.
+    /// Item 86: kêu âm thanh khẩn cấp + hiện banner khi xuất hiện hoặc tăng số
+    /// đơn chờ quá lâu (stale pending). Nếu admin đã tắt banner thì chỉ cập
+    /// nhật số lượng, không kêu nữa.
     /// </summary>
+    /// <param name="stats">Thống kê dashboard vừa tải.</param>
     private void DetectStaleOrders(DashboardStatsModel stats)
     {
         if (_staleDismissed)
@@ -866,7 +878,8 @@ else
             (_from, _to) = (_to, _from);
         }
 
-        // Re-baseline so the range change itself doesn't trigger the alert.
+        // Đặt lại mốc đếm đơn để việc đổi khoảng ngày không kích hoạt nhầm
+        // cảnh báo "có đơn mới" (tổng đơn của khoảng mới khác khoảng cũ).
         _baselineOrderCount = -1;
         _newOrderCount = 0;
         _staleDismissed = false;

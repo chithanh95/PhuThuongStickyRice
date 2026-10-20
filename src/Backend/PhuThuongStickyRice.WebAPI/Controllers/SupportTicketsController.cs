@@ -11,6 +11,10 @@ using System.Threading.Tasks;
 
 namespace PhuThuongStickyRice.WebAPI.Controllers
 {
+    /// <summary>
+    /// API phiếu hỗ trợ (/ho-tro): khách gửi yêu cầu hỗ trợ public (không cần
+    /// đăng nhập), admin xem danh sách theo trạng thái và trả lời từng phiếu.
+    /// </summary>
     [EnableRateLimiting(RateLimiterPolicyNames.DefaultPolicy)]
     [Produces("application/json")]
     [Route("api/[controller]")]
@@ -24,7 +28,10 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             _ticketAppService = ticketAppService;
         }
 
-        /// <summary>Public: customer opens a support ticket (/ho-tro).</summary>
+        /// <summary>
+        /// Public: khách mở phiếu hỗ trợ ở trang /ho-tro (không cần đăng nhập).
+        /// Lỗi nghiệp vụ (ví dụ SĐT sai định dạng) trả 400 kèm thông điệp.
+        /// </summary>
         [AllowAnonymous]
         [HttpPost]
         public async Task<ActionResult> Create(
@@ -41,6 +48,12 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             }
         }
 
+        /// <summary>
+        /// Admin xem danh sách phiếu hỗ trợ, lọc theo trạng thái
+        /// (<paramref name="status"/> null = lấy tất cả).
+        /// </summary>
+        /// <param name="status">Trạng thái cần lọc; null để lấy tất cả.</param>
+        /// <param name="cancellationToken">Token hủy request.</param>
         [Authorize(Roles = "Admin")]
         [HttpGet]
         public async Task<ActionResult> GetList(
@@ -50,6 +63,13 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             return Ok(await _ticketAppService.GetListAsync(status));
         }
 
+        /// <summary>
+        /// Admin trả lời một phiếu hỗ trợ. Trả lời xong phiếu chuyển sang
+        /// trạng thái đã xử lý (do service quyết định).
+        /// </summary>
+        /// <param name="id">Id phiếu hỗ trợ.</param>
+        /// <param name="dto">Nội dung trả lời.</param>
+        /// <param name="cancellationToken">Token hủy request.</param>
         [Authorize(Roles = "Admin")]
         [HttpPut("{id:guid}/reply")]
         public async Task<ActionResult> Reply(

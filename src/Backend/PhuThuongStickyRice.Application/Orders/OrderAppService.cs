@@ -2598,7 +2598,11 @@ namespace PhuThuongStickyRice.Application.Orders
                 // Dùng thẳng IGrouping thay vì group.ToList(): GroupBy đã
                 // buffer trong memory nên enumerate nhiều lần không tốn thêm,
                 // tránh 1 lần cấp phát list cho mỗi nhóm.
-                if (group.Count() < 3)
+                // Best practice: tính Count() 1 lần vào biến — IGrouping không
+                // cache kết quả nên gọi 2 lần (filter + BadCount) sẽ duyệt
+                // lại buffer của group 2 vòng vô ích.
+                var badCount = group.Count();
+                if (badCount < 3)
                 {
                     continue;
                 }
@@ -2606,7 +2610,7 @@ namespace PhuThuongStickyRice.Application.Orders
                 result.Add(new PoorlyRatedDishDto
                 {
                     ProductName = group.Key,
-                    BadCount = group.Count(),
+                    BadCount = badCount,
                     AvgRating = Math.Round(group.Average(x => x.Rating), 1),
                     SampleComments = group
                         .Where(x => !string.IsNullOrWhiteSpace(x.Comment))

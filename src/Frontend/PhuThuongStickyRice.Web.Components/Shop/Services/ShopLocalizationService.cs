@@ -6,11 +6,11 @@ using System.Threading.Tasks;
 namespace PhuThuongStickyRice.Web.Components.Shop.Services
 {
     /// <summary>
-    /// Item 134: tiny VI/EN dictionary for the SHOP pages' chrome only
-    /// (shop / cart / checkout headings and buttons — never product names
-    /// or descriptions). The language persists in localStorage.
+    /// Từ điển VI/EN gọn nhẹ chỉ cho phần khung các trang SHOP (tiêu đề/nút của
+    /// trang shop, giỏ hàng, thanh toán — không dịch tên hay mô tả món ăn).
+    /// Ngôn ngữ đang dùng được lưu trong localStorage.
     /// </summary>
-    public class ShopI18n
+    public class ShopLocalizationService
     {
         private const string StorageKey = "phuthuong.lang";
 
@@ -18,7 +18,7 @@ namespace PhuThuongStickyRice.Web.Components.Shop.Services
         private string _language = "vi";
         private bool _loaded;
 
-        public ShopI18n(IJSRuntime jsRuntime)
+        public ShopLocalizationService(IJSRuntime jsRuntime)
         {
             _jsRuntime = jsRuntime;
         }

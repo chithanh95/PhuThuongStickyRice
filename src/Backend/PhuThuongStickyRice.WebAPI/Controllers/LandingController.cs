@@ -15,6 +15,11 @@ using System.Threading.Tasks;
 
 namespace PhuThuongStickyRice.WebAPI.Controllers
 {
+    /// <summary>
+    /// API nội dung trang landing: public đọc nội dung hiển thị (hero, món
+    /// nổi bật, câu chuyện...), admin sửa nội dung và upload ảnh ở trang
+    /// /admin/noi-dung-landing. Ảnh upload tối đa 5MB.
+    /// </summary>
     [EnableRateLimiting(RateLimiterPolicyNames.DefaultPolicy)]
     [Produces("application/json")]
     [Route("api/[controller]")]
@@ -42,6 +47,11 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             _environment = environment;
         }
 
+        /// <summary>
+        /// Public: lấy toàn bộ nội dung hiển thị của trang landing
+        /// (banner, món nổi bật, câu chuyện thương hiệu...).
+        /// </summary>
+        /// <param name="cancellationToken">Token hủy request.</param>
         [AllowAnonymous]
         [HttpGet("content")]
         public async Task<ActionResult> GetContent(CancellationToken cancellationToken = default)
@@ -50,6 +60,12 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             return Ok(content);
         }
 
+        /// <summary>
+        /// Admin lưu nội dung trang landing (sửa ở /admin/noi-dung-landing).
+        /// Ghi đè toàn bộ nội dung — client phải gửi đủ các trường.
+        /// </summary>
+        /// <param name="dto">Nội dung landing mới.</param>
+        /// <param name="cancellationToken">Token hủy request.</param>
         [Authorize(Roles = "Admin")]
         [HttpPut("content")]
         public async Task<ActionResult> UpdateContent(

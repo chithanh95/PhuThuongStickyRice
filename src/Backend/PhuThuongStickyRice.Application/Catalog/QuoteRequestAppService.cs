@@ -50,6 +50,12 @@ namespace PhuThuongStickyRice.Application.Catalog
     /// </summary>
     public class QuoteRequestAppService : ApplicationService, IQuoteRequestAppService
     {
+        /// <summary>Loại nhắc cúng: rằm 15 âm lịch (giá trị lưu trong DB — không đổi, chỉ gom về hằng số).</summary>
+        private const string ReminderTypeFullMoon = "Ram";
+
+        /// <summary>Loại nhắc cúng: mùng 1 âm lịch (giá trị lưu trong DB — không đổi, chỉ gom về hằng số).</summary>
+        private const string ReminderTypeFirstDay = "Mung1";
+
         private readonly IRepository<QuoteRequest, Guid> _quotes;
         private readonly IRepository<CungReminder, Guid> _reminders;
         private readonly IAsyncQueryableExecuter _asyncExecuter;
@@ -191,8 +197,8 @@ namespace PhuThuongStickyRice.Application.Catalog
             EnsureValidVnPhone(dto.CustomerPhone);
 
             var type = (dto.ReminderType ?? string.Empty).Trim();
-            if (!string.Equals(type, "Ram", StringComparison.OrdinalIgnoreCase)
-                && !string.Equals(type, "Mung1", StringComparison.OrdinalIgnoreCase))
+            if (!string.Equals(type, ReminderTypeFullMoon, StringComparison.OrdinalIgnoreCase)
+                && !string.Equals(type, ReminderTypeFirstDay, StringComparison.OrdinalIgnoreCase))
             {
                 throw new Domain.Exceptions.DomainException("Loại nhắc không hợp lệ.");
             }

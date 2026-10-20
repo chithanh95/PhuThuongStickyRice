@@ -2,7 +2,7 @@
 @using PhuThuongStickyRice.Web.Components.Landing.Services
 @using PhuThuongStickyRice.Web.Components.Core.Services
 @inject LandingService LandingService
-@inject AppI18n AppI18n
+@inject AppLocalizationService AppLocalizationService
 @implements IDisposable
 
 <footer class="sg-footer">
@@ -19,16 +19,16 @@
                 }
             </div>
             <div class="sg-footer-col">
-                <h4 class="sg-footer-h">@AppI18n.Translate("footer.explore")</h4>
-                <a href="/">@AppI18n.Translate("nav.about")</a>
-                <a href="/shop">@AppI18n.Translate("nav.menu")</a>
-                <a href="/dat-so-luong-lon">@AppI18n.Translate("nav.bulk_order")</a>
-                <a href="/dat-tiec">@AppI18n.Translate("nav.party_order")</a>
-                <a href="/nhuong-quyen">@AppI18n.Translate("nav.franchise")</a>
-                <a href="/faq">@AppI18n.Translate("footer.faq")</a>
+                <h4 class="sg-footer-h">@AppLocalizationService.Translate("footer.explore")</h4>
+                <a href="/">@AppLocalizationService.Translate("nav.about")</a>
+                <a href="/shop">@AppLocalizationService.Translate("nav.menu")</a>
+                <a href="/dat-so-luong-lon">@AppLocalizationService.Translate("nav.bulk_order")</a>
+                <a href="/dat-tiec">@AppLocalizationService.Translate("nav.party_order")</a>
+                <a href="/nhuong-quyen">@AppLocalizationService.Translate("nav.franchise")</a>
+                <a href="/faq">@AppLocalizationService.Translate("footer.faq")</a>
             </div>
             <div class="sg-footer-col">
-                <h4 class="sg-footer-h">@AppI18n.Translate("footer.contact_us")</h4>
+                <h4 class="sg-footer-h">@AppLocalizationService.Translate("footer.contact_us")</h4>
                 @if (!string.IsNullOrWhiteSpace(_content?.ContactPhone))
                 {
                     <a class="sg-footer-hotline" href="tel:@_content.ContactPhone"><span aria-hidden="true">📞</span> @_content.ContactPhone</a>
@@ -49,8 +49,8 @@
 
     protected override async Task OnInitializedAsync()
     {
-        AppI18n.OnChange -= OnLangChanged;
-        AppI18n.OnChange += OnLangChanged;
+        AppLocalizationService.OnChange -= OnLangChanged;
+        AppLocalizationService.OnChange += OnLangChanged;
         try
         {
             _content = await LandingService.GetContentAsync();
@@ -65,6 +65,6 @@
 
     public void Dispose()
     {
-        AppI18n.OnChange -= OnLangChanged;
+        AppLocalizationService.OnChange -= OnLangChanged;
     }
 }

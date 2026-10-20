@@ -1,3 +1,6 @@
+@* Trang khuyến mãi giờ vàng (admin): chương trình giảm giá theo khung giờ + ngày trong
+   tuần. Ngày áp dụng lưu dạng bitmask DaysOfWeekFlags (T2=1, T3=2, T4=4, T5=8, T6=16,
+   T7=32, CN=64; 127 = cả tuần). Server tự áp giá KM khi đơn rơi vào khung giờ. *@
 @page "/admin/khuyen-mai"
 @attribute [Authorize(Roles = "Admin")]
 @using PhuThuongStickyRice.Web.Components.Admin.Models
@@ -172,6 +175,8 @@
     private ConfirmDialog DeleteDialog;
     private PromotionModel _deleting;
 
+    // Bitmask ngày trong tuần: T2=1, T3=2, T4=4, T5=8, T6=16, T7=32, CN=64.
+    // Mặc định 127 (= tất cả 7 bit cộng lại) nghĩa là áp dụng cả tuần.
     private readonly List<(int Value, string Name)> _days = new()
     {
         (1, "T2"), (2, "T3"), (4, "T4"), (8, "T5"), (16, "T6"), (32, "T7"), (64, "CN")

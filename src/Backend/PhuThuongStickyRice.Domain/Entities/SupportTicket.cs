@@ -2,15 +2,21 @@ using System;
 
 namespace PhuThuongStickyRice.Domain.Entities
 {
+    /// <summary>
+    /// Trạng thái xử lý phiếu hỗ trợ: Mới tiếp nhận → Đang xử lý → Đã xong.
+    /// </summary>
     public enum SupportTicketStatus
     {
+        /// <summary>Phiếu mới, admin chưa xem.</summary>
         New = 0,
+        /// <summary>Admin đang xử lý.</summary>
         InProgress = 1,
+        /// <summary>Đã trả lời/xử lý xong.</summary>
         Done = 2
     }
 
     /// <summary>
-    /// Customer support ticket from the public /ho-tro form.
+    /// Phiếu hỗ trợ của khách gửi từ form public /ho-tro (không cần đăng nhập).
     /// </summary>
     public class SupportTicket : Entity<Guid>, IAggregateRoot
     {
@@ -24,14 +30,14 @@ namespace PhuThuongStickyRice.Domain.Entities
 
         public string Phone { get; set; }
 
-        /// <summary>Optional related order number.</summary>
+        /// <summary>Mã đơn liên quan (nếu khách gửi kèm); không bắt buộc.</summary>
         public string OrderNumber { get; set; }
 
         public string Message { get; set; }
 
         public SupportTicketStatus Status { get; set; }
 
-        /// <summary>Admin reply note (internal).</summary>
+        /// <summary>Nội dung admin trả lời (lưu nội bộ, có thể hiện cho khách).</summary>
         public string ReplyNote { get; set; }
 
         public DateTime CreatedAt { get; set; }

@@ -104,7 +104,7 @@ namespace PhuThuongStickyRice.Application.Shop
             if (exists != null)
             {
                 throw new Domain.Exceptions.DomainException(
-                    $"Ngày {date:dd/MM/yyyy} đã có trong lịch nghỉ.");
+                    DuplicateHolidayMessage(date));
             }
 
             var entity = new HolidaySchedule
@@ -140,7 +140,7 @@ namespace PhuThuongStickyRice.Application.Shop
             if (clash != null)
             {
                 throw new Domain.Exceptions.DomainException(
-                    $"Ngày {date:dd/MM/yyyy} đã có trong lịch nghỉ.");
+                    DuplicateHolidayMessage(date));
             }
 
             entity.HolidayDate = date;
@@ -191,6 +191,15 @@ namespace PhuThuongStickyRice.Application.Shop
                 queryable.Where(x => x.HolidayDate >= today && x.HolidayDate <= limit)
                     .OrderBy(x => x.HolidayDate));
             return list.Select(MapToDto).ToList();
+        }
+
+        /// <summary>
+        /// Thông báo lỗi khi ngày nghỉ bị trùng — dùng chung cho Create và
+        /// Update để 2 nơi không copy chuỗi giống hệt nhau.
+        /// </summary>
+        private static string DuplicateHolidayMessage(DateTime date)
+        {
+            return $"Ngày {date:dd/MM/yyyy} đã có trong lịch nghỉ.";
         }
 
         /// <summary>

@@ -1,3 +1,7 @@
+@* Trang quản lý mã giảm giá (admin): danh sách + tìm kiếm + phân trang, thêm/sửa/xóa
+   qua modal. Mỗi mã giảm theo % (1–100) hoặc theo số tiền cố định; VoucherType = 0
+   là mã thường, loại khác (voucher quà tặng) không áp giảm giá. Khách nhập mã ở
+   checkout, server re-validate lại khi giỏ hàng đổi. *@
 @page "/admin/ma-giam-gia"
 @attribute [Authorize(Roles = "Admin")]
 @using PhuThuongStickyRice.Web.Components.Admin.Models
@@ -393,6 +397,9 @@
         }
         _form.Code = _form.Code.Trim().ToUpperInvariant();
 
+        // VoucherType == 0: mã giảm giá thường (giảm % hoặc giảm tiền mặt).
+        // Loại khác (voucher quà tặng/thẻ xôi) không áp giảm giá nên bỏ qua
+        // validation %/tiền giảm bên dưới.
         if (_form.VoucherType == 0)
         {
             if (_isPercent)

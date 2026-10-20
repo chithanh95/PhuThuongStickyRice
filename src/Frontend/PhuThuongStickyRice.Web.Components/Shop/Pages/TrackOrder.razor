@@ -18,26 +18,26 @@
 @inject AdminCommerceService AdminCommerceService
 @inject NavigationManager Navigation
 @inject IJSRuntime JSRuntime
-@inject AppI18n AppI18n
+@inject AppLocalizationService AppLocalizationService
 @inject FunnelService Funnel
 @implements IDisposable
 
-<h1>@AppI18n.Translate("shop.track_title")</h1>
+<h1>@AppLocalizationService.Translate("shop.track_title")</h1>
 
 <div class="card mb-3 to-lookup">
     <div class="card-body">
         <div class="form-row">
             <div class="col-md-4">
-                <label for="to-order-number">@AppI18n.Translate("shop.order_number")</label>
+                <label for="to-order-number">@AppLocalizationService.Translate("shop.order_number")</label>
                 <input id="to-order-number" class="form-control" @bind="_orderNumber" placeholder="PX-20261014-0001" />
             </div>
             <div class="col-md-4">
-                <label for="to-phone">@AppI18n.Translate("shop.order_phone")</label>
+                <label for="to-phone">@AppLocalizationService.Translate("shop.order_phone")</label>
                 <input id="to-phone" class="form-control" @bind="_phone" placeholder="0901234567" />
             </div>
             <div class="col-md-4 d-flex align-items-end">
                 <button class="btn btn-primary" @onclick="Lookup" disabled="@_loading">
-                    @(_loading ? AppI18n.Translate("shop.looking_up") : AppI18n.Translate("shop.lookup"))
+                    @(_loading ? AppLocalizationService.Translate("shop.looking_up") : AppLocalizationService.Translate("shop.lookup"))
                 </button>
             </div>
         </div>
@@ -51,16 +51,16 @@
 @* Lịch sử đơn hàng theo SĐT — không cần đăng nhập. *@
 <div class="card mb-3 to-history">
     <div class="card-body">
-        <h5>@AppI18n.Translate("shop.order_history")</h5>
-        <p class="text-muted"><small>@AppI18n.Translate("shop.history_hint")</small></p>
+        <h5>@AppLocalizationService.Translate("shop.order_history")</h5>
+        <p class="text-muted"><small>@AppLocalizationService.Translate("shop.history_hint")</small></p>
         <div class="form-row">
             <div class="col-md-4">
-                <label for="to-history-phone">@AppI18n.Translate("shop.order_phone")</label>
+                <label for="to-history-phone">@AppLocalizationService.Translate("shop.order_phone")</label>
                 <input id="to-history-phone" class="form-control" @bind="_historyPhone" placeholder="0901234567" inputmode="tel" />
             </div>
             <div class="col-md-4 d-flex align-items-end">
                 <button class="btn btn-outline-primary" @onclick="LoadHistoryAsync" disabled="@_historyLoading">
-                    @(_historyLoading ? AppI18n.Translate("common.loading") : AppI18n.Translate("shop.view_history"))
+                    @(_historyLoading ? AppLocalizationService.Translate("common.loading") : AppLocalizationService.Translate("shop.view_history"))
                 </button>
             </div>
         </div>
@@ -72,14 +72,14 @@
         {
             if (_history.Count == 0)
             {
-                <p class="text-muted mt-3 mb-0"><em>@AppI18n.Translate("shop.no_orders")</em></p>
+                <p class="text-muted mt-3 mb-0"><em>@AppLocalizationService.Translate("shop.no_orders")</em></p>
             }
             else
             {
                 <div class="table-responsive mt-3">
                     <table class="table table-sm">
                         <thead>
-                            <tr><th>@AppI18n.Translate("shop.order_number")</th><th>@AppI18n.Translate("shop.order_date")</th><th class="text-right">@AppI18n.Translate("shop.order_total")</th><th>@AppI18n.Translate("common.status")</th><th></th></tr>
+                            <tr><th>@AppLocalizationService.Translate("shop.order_number")</th><th>@AppLocalizationService.Translate("shop.order_date")</th><th class="text-right">@AppLocalizationService.Translate("shop.order_total")</th><th>@AppLocalizationService.Translate("common.status")</th><th></th></tr>
                         </thead>
                         <tbody>
                             @foreach (var h in _history)
@@ -90,8 +90,8 @@
                                     <td class="text-right">@FormatPrice(h.TotalAmount)</td>
                                     <td>@OrderStatusBadge(h.Status)</td>
                                     <td class="text-right text-nowrap">
-                                        <button class="btn btn-sm btn-outline-info mr-1" @onclick="() => ViewHistoryDetail(h)">@AppI18n.Translate("shop.detail")</button>
-                                        <button class="btn btn-sm btn-outline-success" @onclick="() => ReorderAsync(h)" disabled="@_reordering">@AppI18n.Translate("shop.reorder")</button>
+                                        <button class="btn btn-sm btn-outline-info mr-1" @onclick="() => ViewHistoryDetail(h)">@AppLocalizationService.Translate("shop.detail")</button>
+                                        <button class="btn btn-sm btn-outline-success" @onclick="() => ReorderAsync(h)" disabled="@_reordering">@AppLocalizationService.Translate("shop.reorder")</button>
                                     </td>
                                 </tr>
                             }
@@ -162,7 +162,7 @@
             @* Wave 6a (item 21): reorder — restores the order's lines into the cart. *@
             <div class="mb-2">
                 <button class="btn btn-outline-success btn-sm" @onclick="() => ReorderAsync(_order)" disabled="@_reordering">
-                    @(_reordering ? AppI18n.Translate("shop.reordering") : AppI18n.Translate("shop.reorder"))
+                    @(_reordering ? AppLocalizationService.Translate("shop.reordering") : AppLocalizationService.Translate("shop.reorder"))
                 </button>
                 @if (!string.IsNullOrEmpty(_reorderMessage))
                 {
@@ -1109,8 +1109,8 @@
 
     protected override async Task OnInitializedAsync()
     {
-        AppI18n.OnChange += OnLangChanged;
-        await AppI18n.InitializeAsync();
+        AppLocalizationService.OnChange += OnLangChanged;
+        await AppLocalizationService.InitializeAsync();
         Funnel.Track(FunnelService.Events.TrackView, new Uri(Navigation.Uri).AbsolutePath);
         // Bug-hunt 2026-10-19: ParseQuery dùng Uri.UnescapeDataString —
         // URL chứa % sai định dạng (vd /track-order?orderNumber=%zz) sẽ ném
@@ -2054,7 +2054,7 @@
 
     public void Dispose()
     {
-        AppI18n.OnChange -= OnLangChanged;
+        AppLocalizationService.OnChange -= OnLangChanged;
         StopPolling();
     }
 

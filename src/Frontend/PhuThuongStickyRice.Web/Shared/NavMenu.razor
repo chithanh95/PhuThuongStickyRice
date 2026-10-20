@@ -5,7 +5,7 @@
 @inject JwtAuthenticationStateProvider AuthStateProvider
 @inject NavigationManager Navigation
 @inject CartState CartState
-@inject PhuThuongStickyRice.Web.Components.Shop.Services.ShopI18n ShopI18n
+@inject PhuThuongStickyRice.Web.Components.Shop.Services.ShopLocalizationService ShopLocalizationService
 @implements IDisposable
 
 <div class="top-row pl-4 navbar navbar-dark">
@@ -214,8 +214,8 @@
     protected override async Task OnInitializedAsync()
     {
         CartState.OnChange += OnCartChanged;
-        ShopI18n.OnChange += OnLangChanged;
-        await ShopI18n.InitializeAsync();
+        ShopLocalizationService.OnChange += OnLangChanged;
+        await ShopLocalizationService.InitializeAsync();
         UpdateLangLabel();
     }
 
@@ -227,12 +227,12 @@
 
     private void UpdateLangLabel()
     {
-        _langLabel = ShopI18n.IsEnglish ? "VI" : "EN";
+        _langLabel = ShopLocalizationService.IsEnglish ? "VI" : "EN";
     }
 
     private async Task ToggleLang()
     {
-        await ShopI18n.SetLanguageAsync(ShopI18n.IsEnglish ? "vi" : "en");
+        await ShopLocalizationService.SetLanguageAsync(ShopLocalizationService.IsEnglish ? "vi" : "en");
     }
 
     private void OnCartChanged() => InvokeAsync(StateHasChanged);
@@ -252,6 +252,6 @@
     public void Dispose()
     {
         CartState.OnChange -= OnCartChanged;
-        ShopI18n.OnChange -= OnLangChanged;
+        ShopLocalizationService.OnChange -= OnLangChanged;
     }
 }

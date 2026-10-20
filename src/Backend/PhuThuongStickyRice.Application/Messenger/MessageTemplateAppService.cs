@@ -51,6 +51,12 @@ namespace PhuThuongStickyRice.Application.Messenger
         /// </summary>
         private const int MaxListRows = 500;
 
+        /// <summary>Kênh mẫu tin SMS — giá trị lưu trong DB.</summary>
+        private const string ChannelSms = "SMS";
+
+        /// <summary>Kênh mẫu tin Zalo — giá trị lưu trong DB.</summary>
+        private const string ChannelZalo = "Zalo";
+
         /// <summary>Khởi tạo service quản trị mẫu tin nhắn.</summary>
         public MessageTemplateAppService(
             IRepository<MessageTemplate, Guid> templates,
@@ -133,13 +139,13 @@ namespace PhuThuongStickyRice.Application.Messenger
         private static string NormalizeChannel(string channel)
         {
             var trimmed = (channel ?? string.Empty).Trim();
-            if (!trimmed.Equals("SMS", StringComparison.OrdinalIgnoreCase)
-                && !trimmed.Equals("Zalo", StringComparison.OrdinalIgnoreCase))
+            if (!trimmed.Equals(ChannelSms, StringComparison.OrdinalIgnoreCase)
+                && !trimmed.Equals(ChannelZalo, StringComparison.OrdinalIgnoreCase))
             {
                 throw new DomainException("Kênh phải là SMS hoặc Zalo.");
             }
 
-            return trimmed.Equals("Zalo", StringComparison.OrdinalIgnoreCase) ? "Zalo" : "SMS";
+            return trimmed.Equals(ChannelZalo, StringComparison.OrdinalIgnoreCase) ? ChannelZalo : ChannelSms;
         }
 
         private static MessageTemplateDto MapToDto(MessageTemplate x)

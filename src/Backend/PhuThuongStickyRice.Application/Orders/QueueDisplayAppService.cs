@@ -50,6 +50,17 @@ namespace PhuThuongStickyRice.Application.Orders
         private const string NowServingCacheKey = "queue:now-serving";
         private static readonly TimeSpan NowServingCacheTtl = TimeSpan.FromSeconds(15);
 
+        // Best practice: tập trạng thái hiển thị là static readonly HashSet —
+        // endpoint bị poll mỗi 15s nên không cấp phát array mới + scan tuyến
+        // tính mỗi request; Contains O(1) trong vòng lặp dựng vé. Cùng 3
+        // trạng thái như bản cũ, không đổi ngữ nghĩa lọc.
+        private static readonly HashSet<OrderStatus> VisibleStatuses = new()
+        {
+            OrderStatus.Confirmed,
+            OrderStatus.Preparing,
+            OrderStatus.Delivering
+        };
+
         /// <summary>Nhãn trạng thái vé chờ trên màn hình TV khi đơn đang chuẩn bị.</summary>
         private const string PreparingStatusLabel = "Preparing";
         /// <summary>Nhãn trạng thái vé chờ trên màn hình TV khi đơn đã xong, mời khách ra lấy món.</summary>
@@ -109,9 +120,6 @@ namespace PhuThuongStickyRice.Application.Orders
             var dayStartUtc = VietnamTime.DayStartUtc(vnNow.Date);
             var dayEndUtc = VietnamTime.DayEndExclusiveUtc(vnNow.Date);
 
-            var visibleStatuses = new[]
-                { OrderStatus.Confirmed, OrderStatus.Preparing, OrderStatus.Delivering };
-
             var queryable = await _orders.GetQueryableAsync();
             // perf-hunt 2026-10-19: this endpoint is polled every 15s by the
             // /cho waiting screen. Project only the two columns the ticket
@@ -133,7 +141,7 @@ namespace PhuThuongStickyRice.Application.Orders
                 .Select(x => (x.Status, x.OrderNumber))
                 .ToList();
 
-            var tickets = MapQueueTickets(today, visibleStatuses);
+            var tickets = MapQueueTickets(today);
 
             // "Mời lấy món" first — those customers need to act.
             return tickets
@@ -152,15 +160,16 @@ namespace PhuThuongStickyRice.Application.Orders
         // CA1859: method private, caller duy nhất truyền List — khai báo
         // List cụ thể để indexer/Count không qua interface dispatch.
         // Giữ string? như cũ vì OrderNumber có thể null (xử lý ?? ở dưới).
+        // Tập trạng thái hiển thị lấy từ VisibleStatuses (static HashSet) thay
+        // vì tham số array — cùng 3 trạng thái, Contains O(1) mỗi vòng lặp.
         private static List<QueueTicketDto> MapQueueTickets(
-            List<(OrderStatus Status, string? OrderNumber)> today,
-            OrderStatus[] visibleStatuses)
+            List<(OrderStatus Status, string? OrderNumber)> today)
         {
             var result = new List<QueueTicketDto>();
             for (var i = 0; i < today.Count; i++)
             {
                 var order = today[i];
-                if (!visibleStatuses.Contains(order.Status))
+                if (!VisibleStatuses.Contains(order.Status))
                 {
                     continue;
                 }

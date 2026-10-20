@@ -5,6 +5,11 @@ using PhuThuongStickyRice.Domain.Entities;
 
 namespace PhuThuongStickyRice.Domain.Repositories
 {
+    /// <summary>
+    /// Repository gói đăng ký xôi định kỳ (Subscription): mở rộng repository
+    /// chuẩn của ABP thêm thao tác nguyên tử "giành quyền sinh đơn" —
+    /// chống sinh trùng đơn khi worker 6h sáng và admin bấm tay chạy cùng lúc.
+    /// </summary>
     public interface ISubscriptionRepository : Volo.Abp.Domain.Repositories.IRepository<Subscription, Guid>
     {
         /// <summary>

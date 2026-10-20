@@ -52,6 +52,12 @@ namespace PhuThuongStickyRice.Application.Customer
         /// <summary>Số ngày không mua thì coi là khách ngủ đông (inactive).</summary>
         private const int InactiveCutoffDays = 30;
 
+        /// <summary>
+        /// Số phần tử tối đa trong một batch khi chia câu IN: SQL Server giới
+        /// hạn ~2100 tham số/truy vấn, để 1000 an toàn và hiệu quả.
+        /// </summary>
+        private const int InClauseBatchSize = 1000;
+
         private readonly Volo.Abp.Domain.Repositories.IRepository<CustomerTag, Guid> _tags;
         private readonly IOrderRepository _orders;
         private readonly IAsyncQueryableExecuter _asyncExecuter;
@@ -109,11 +115,12 @@ namespace PhuThuongStickyRice.Application.Customer
 
             var queryable = await _tags.GetQueryableAsync();
 
-            // Chunk the IN clause (<= 1000 params/query; SQL Server allows ~2100).
-            // Callers may pass thousands of phones (export tags lookup), which
-            // would otherwise fail with "too many parameters" on SQL Server.
+            // Chunk the IN clause (<= InClauseBatchSize params/query; SQL
+            // Server allows ~2100). Callers may pass thousands of phones
+            // (export tags lookup), which would otherwise fail with
+            // "too many parameters" on SQL Server.
             var rows = new List<CustomerTag>();
-            foreach (var batch in list.Chunk(1000))
+            foreach (var batch in list.Chunk(InClauseBatchSize))
             {
                 rows.AddRange(await _asyncExecuter.ToListAsync(
                     queryable.Where(x => batch.Contains(x.CustomerPhone))));

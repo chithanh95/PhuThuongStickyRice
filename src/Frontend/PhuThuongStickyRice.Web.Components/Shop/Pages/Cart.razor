@@ -21,16 +21,16 @@
 @inject AdminCommerceService AdminCommerceService
 @inject NavigationManager Navigation
 @inject IJSRuntime JSRuntime
-@inject AppI18n AppI18n
+@inject AppLocalizationService AppLocalizationService
 @inject FunnelService Funnel
 @implements IDisposable
 
-<h1>@AppI18n.Translate("common.cart")</h1>
+<h1>@AppLocalizationService.Translate("common.cart")</h1>
 
 @if (CartState.Items.Count == 0)
 {
     <div class="alert alert-info">
-        @AppI18n.Translate("shop.cart_empty") <a href="/shop">@AppI18n.Translate("shop.cart_browse")</a>
+        @AppLocalizationService.Translate("shop.cart_empty") <a href="/shop">@AppLocalizationService.Translate("shop.cart_browse")</a>
     </div>
 
     @* Item 123: giỏ trống → gợi ý món bán chạy để cứu phiên thoát. *@
@@ -78,10 +78,10 @@ else
                    ô dữ liệu với tên cột (Sản phẩm/Đơn giá/Thành tiền/Số lượng)
                    khi điều hướng bảng bằng bàn phím. *@
                 <tr>
-                    <th scope="col">@AppI18n.Translate("shop.product")</th>
-                    <th scope="col" class="text-right">@AppI18n.Translate("shop.unit_price")</th>
-                    <th scope="col" class="text-right">@AppI18n.Translate("shop.line_total")</th>
-                    <th scope="col" class="text-center">@AppI18n.Translate("common.quantity")</th>
+                    <th scope="col">@AppLocalizationService.Translate("shop.product")</th>
+                    <th scope="col" class="text-right">@AppLocalizationService.Translate("shop.unit_price")</th>
+                    <th scope="col" class="text-right">@AppLocalizationService.Translate("shop.line_total")</th>
+                    <th scope="col" class="text-center">@AppLocalizationService.Translate("common.quantity")</th>
                     <th scope="col"></th>
                 </tr>
             </thead>
@@ -105,13 +105,13 @@ else
                             }
                             @if (!string.IsNullOrWhiteSpace(cartItem.ToppingNames))
                             {
-                                <br /><small class="text-muted">@AppI18n.Translate("shop.toppings_label"): @cartItem.ToppingNames</small>
+                                <br /><small class="text-muted">@AppLocalizationService.Translate("shop.toppings_label"): @cartItem.ToppingNames</small>
                             }
                             @* BA cart: bỏ mã sản phẩm nội bộ (XOI-DO...) — khách không cần thấy. *@
                             @* Wave 6a (item 24): per-item note ("ghi chú món"). *@
                             <br />
                             <input class="form-control form-control-sm mt-1 cart-item-note"
-                                   maxlength="500" placeholder="@AppI18n.Translate("shop.item_note_placeholder")"
+                                   maxlength="500" placeholder="@AppLocalizationService.Translate("shop.item_note_placeholder")"
                                    aria-label="Ghi chú cho món @cartItem.ProductName"
                                    value="@cartItem.Note"
                                    @onchange="(e) => CartState.UpdateNote(cartItem.LineKey, e.Value?.ToString())" />
@@ -128,14 +128,14 @@ else
                         <td class="text-right">
                             @* A11y-1610: aria-label kèm tên món — trước đây mọi dòng đều đọc
                                chung chung là "Xóa", người dùng bàn phím không biết xóa món nào. *@
-                            <button class="btn btn-sm btn-danger" @onclick="() => CartState.Remove(cartItem.LineKey)" aria-label="Xóa @cartItem.ProductName khỏi giỏ hàng">@AppI18n.Translate("common.delete")</button>
+                            <button class="btn btn-sm btn-danger" @onclick="() => CartState.Remove(cartItem.LineKey)" aria-label="Xóa @cartItem.ProductName khỏi giỏ hàng">@AppLocalizationService.Translate("common.delete")</button>
                         </td>
                     </tr>
                 }
             </tbody>
             <tfoot>
                 <tr>
-                    <td colspan="3" class="text-right"><strong>@AppI18n.Translate("common.total"):</strong></td>
+                    <td colspan="3" class="text-right"><strong>@AppLocalizationService.Translate("common.total"):</strong></td>
                     <td class="text-right"><strong class="text-danger cart-total-amount">@FormatPrice(CartState.TotalAmount)</strong></td>
                     <td></td>
                 </tr>
@@ -152,21 +152,21 @@ else
 
     <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 cart-actions">
         <div>
-            <a class="btn btn-secondary mb-2 mr-2" href="/shop">@AppI18n.Translate("shop.continue_shopping")</a>
+            <a class="btn btn-secondary mb-2 mr-2" href="/shop">@AppLocalizationService.Translate("shop.continue_shopping")</a>
         </div>
         <button class="btn btn-success btn-lg mb-2 cart-checkout-flow" @onclick="NavigateToCheckout">
-            @AppI18n.Translate("common.checkout") (@CartState.TotalQuantity)
+            @AppLocalizationService.Translate("common.checkout") (@CartState.TotalQuantity)
         </button>
     </div>
 
     @* Mobile: thanh thanh toán sticky dưới cùng — gọn hơn nút full-width. *@
     <div class="cart-sticky-checkout">
         <div class="cart-sticky-total">
-            <small class="text-muted">@AppI18n.Translate("common.total")</small>
+            <small class="text-muted">@AppLocalizationService.Translate("common.total")</small>
             <strong class="text-danger">@FormatPrice(CartState.TotalAmount)</strong>
         </div>
         <button class="btn btn-success" @onclick="NavigateToCheckout">
-            @AppI18n.Translate("common.checkout") →
+            @AppLocalizationService.Translate("common.checkout") →
         </button>
     </div>
     <div class="cart-sticky-spacer" aria-hidden="true"></div>
@@ -174,7 +174,7 @@ else
     @if (_suggestions != null && _suggestions.Count > 0)
     {
         <div class="card mt-2 cart-upsell">
-            <div class="card-header">@AppI18n.Translate("shop.suggested_sides")</div>
+            <div class="card-header">@AppLocalizationService.Translate("shop.suggested_sides")</div>
             <div class="card-body">
                 <div class="row">
                     @foreach (var s in _suggestions)
@@ -191,7 +191,7 @@ else
                                         <span class="text-danger">@FormatPrice(ShopProductModel.EffectivePrice(s, s.Price))</span>
                                     </div>
                                 </div>
-                                <button class="btn btn-sm btn-primary" @onclick="() => QuickAddSuggestion(s)" aria-label="Thêm @s.Name vào giỏ hàng">@AppI18n.Translate("shop.add")</button>
+                                <button class="btn btn-sm btn-primary" @onclick="() => QuickAddSuggestion(s)" aria-label="Thêm @s.Name vào giỏ hàng">@AppLocalizationService.Translate("shop.add")</button>
                             </div>
                         </div>
                     }
@@ -251,8 +251,8 @@ else
     /// </summary>
     protected override async Task OnInitializedAsync()
     {
-        AppI18n.OnChange += OnLangChanged;
-        await AppI18n.InitializeAsync();
+        AppLocalizationService.OnChange += OnLangChanged;
+        await AppLocalizationService.InitializeAsync();
         Funnel.Track(FunnelService.Events.CartView, new Uri(Navigation.Uri).AbsolutePath);
         CartState.OnChange += OnCartChanged;
         await MergeSharedCartAsync();
@@ -579,13 +579,13 @@ else
         return result;
     }
 
-    /// <summary>Re-render khi người dùng đổi ngôn ngữ (AppI18n.OnChange).</summary>
+    /// <summary>Re-render khi người dùng đổi ngôn ngữ (AppLocalizationService.OnChange).</summary>
     private void OnLangChanged() => InvokeAsync(StateHasChanged);
 
     public void Dispose()
     {
         _disposed = true;
         CartState.OnChange -= OnCartChanged;
-        AppI18n.OnChange -= OnLangChanged;
+        AppLocalizationService.OnChange -= OnLangChanged;
     }
 }

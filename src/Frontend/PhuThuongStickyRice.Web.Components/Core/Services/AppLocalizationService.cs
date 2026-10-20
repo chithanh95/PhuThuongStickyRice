@@ -7,13 +7,13 @@ using System.Threading.Tasks;
 namespace PhuThuongStickyRice.Web.Components.Core.Services
 {
     /// <summary>
-    /// App-wide multilingual service for the PUBLIC web chrome (landing header/nav,
-    /// shared footer, common labels). Default language is Vietnamese; supports
-    /// English, Chinese (Simplified) and Japanese. Persists in localStorage under
-    /// "pt-lang". Full page-body content translation is a separate follow-up —
-    /// this service covers chrome keys only.
+    /// Service đa ngôn ngữ dùng chung cho phần khung web công khai (header/nav trang chủ,
+    /// footer dùng chung, các nhãn chung). Ngôn ngữ mặc định là tiếng Việt; hỗ trợ thêm
+    /// tiếng Anh, tiếng Trung (giản thể) và tiếng Nhật. Lưu lựa chọn trong localStorage
+    /// dưới khóa "pt-lang". Service này chỉ dịch phần khung trang — dịch toàn bộ nội dung
+    /// trang là việc riêng trong tương lai.
     /// </summary>
-    public class AppI18n
+    public class AppLocalizationService
     {
         public const string StorageKey = "pt-lang";
 
@@ -27,7 +27,7 @@ namespace PhuThuongStickyRice.Web.Components.Core.Services
         private string _language = DefaultLanguage;
         private bool _loaded;
 
-        public AppI18n(IJSRuntime jsRuntime)
+        public AppLocalizationService(IJSRuntime jsRuntime)
         {
             _jsRuntime = jsRuntime;
         }

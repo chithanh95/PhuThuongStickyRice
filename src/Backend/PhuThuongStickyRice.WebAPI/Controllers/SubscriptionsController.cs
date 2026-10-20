@@ -11,6 +11,11 @@ using System.Threading.Tasks;
 
 namespace PhuThuongStickyRice.WebAPI.Controllers
 {
+    /// <summary>
+    /// API gói đăng ký xôi định kỳ: khách đăng ký public (/dat-dinh-ky),
+    /// admin xem danh sách và bật/tắt gói. Gói đang hoạt động sinh đơn
+    /// hàng tự động theo lịch hàng ngày.
+    /// </summary>
     [EnableRateLimiting(RateLimiterPolicyNames.DefaultPolicy)]
     [Produces("application/json")]
     [Route("api/[controller]")]
@@ -45,6 +50,12 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             }
         }
 
+        /// <summary>
+        /// Admin xem danh sách gói đăng ký. <paramref name="activeOnly"/> = true
+        /// thì chỉ lấy các gói đang hoạt động.
+        /// </summary>
+        /// <param name="activeOnly">Lọc chỉ gói đang hoạt động (null = tất cả).</param>
+        /// <param name="cancellationToken">Token hủy request.</param>
         [Authorize(Roles = "Admin")]
         [HttpGet]
         public async Task<ActionResult> GetList(
@@ -54,11 +65,23 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             return Ok(await _subscriptionAppService.GetListAsync(activeOnly));
         }
 
+        /// <summary>
+        /// Body request bật/tắt gói đăng ký. Gói bị tắt thì ngừng sinh đơn
+        /// tự động hàng ngày, nhưng lịch sử đơn cũ vẫn giữ nguyên.
+        /// </summary>
         public sealed class SetActiveRequestModel
         {
+            /// <summary><c>true</c> bật gói, <c>false</c> tạm dừng gói.</summary>
             public bool Active { get; set; }
         }
 
+        /// <summary>
+        /// Admin bật/tắt một gói đăng ký. Tắt gói chỉ dừng sinh đơn mới —
+        /// khách đã đăng ký trước đó không bị xóa dữ liệu.
+        /// </summary>
+        /// <param name="id">Id gói đăng ký.</param>
+        /// <param name="model">Trạng thái mong muốn; body null thì coi như tắt.</param>
+        /// <param name="cancellationToken">Token hủy request.</param>
         [Authorize(Roles = "Admin")]
         [HttpPut("{id:guid}/active")]
         public async Task<ActionResult> SetActive(
