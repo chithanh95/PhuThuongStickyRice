@@ -95,6 +95,28 @@ namespace PhuThuongStickyRice.Web.Components.Shop.Services
         }
 
         /// <summary>
+        /// Kiểm tra mã giới thiệu ngay tại checkout để báo lỗi trên màn hình
+        /// thay vì chờ tới lúc tạo đơn (server vẫn validate lại khi tạo đơn).
+        /// Trả null khi gọi API lỗi — caller coi như chưa kiểm tra được và
+        /// không chặn đặt đơn chỉ vì lỗi mạng.
+        /// </summary>
+        /// <param name="code">Mã giới thiệu khách nhập.</param>
+        /// <param name="phone">SĐT người mua (để chặn mã của chính mình).</param>
+        /// <returns>Kết quả kiểm tra, hoặc null khi không gọi được API.</returns>
+        public async Task<ReferralCheckModel> CheckReferralCodeAsync(string code, string phone)
+        {
+            try
+            {
+                return await GetAsync<ReferralCheckModel>(
+                    $"api/loyalty/referral-check?code={Uri.EscapeDataString(code ?? string.Empty)}&phone={Uri.EscapeDataString(phone ?? string.Empty)}");
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
+        /// <summary>
         /// Kiểm tra JSON có property tên <paramref name="name"/> không
         /// (không phân biệt hoa/thường) — dùng để phân biệt response loyalty
         /// đầy đủ với bản tối thiểu công khai.

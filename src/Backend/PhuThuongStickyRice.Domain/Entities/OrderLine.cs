@@ -93,6 +93,15 @@ namespace PhuThuongStickyRice.Domain.Entities
             Guid? sizeOptionId = null,
             string toppingIds = null)
         {
+            // Phải gán Id ngay tại đây: khóa Id cấu hình default SQL
+            // "newsequentialid()" nên EF không sinh key phía client — mọi
+            // dòng mới đều Id = Guid.Empty, khi gắn graph đơn vào DbContext
+            // dòng thứ 2 trở đi trùng key với dòng đầu và EF ném
+            // InvalidOperationException "another instance with the same key
+            // value for {'Id'} is already being tracked" (user gặp 2026-10-21
+            // khi đặt đơn nhiều món). EF vẫn ghi đè Id bằng giá trị DB khi
+            // nạp đơn cũ nên gán ở đây không ảnh hưởng đọc dữ liệu.
+            Id = Guid.NewGuid();
             ProductId = productId;
             ProductName = productName;
             UnitPrice = unitPrice;

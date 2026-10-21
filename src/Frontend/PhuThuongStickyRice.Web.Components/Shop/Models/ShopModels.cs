@@ -272,7 +272,7 @@ namespace PhuThuongStickyRice.Web.Components.Shop.Models
         public string DiscountCode { get; set; }
 
         /// <summary>"ShipperPickup" (default), "Pickup" or legacy "Delivery".</summary>
-        public string FulfillmentMethod { get; set; } = "ShipperPickup";
+        public string FulfillmentMethod { get; set; } = "Pickup";
 
         /// <summary>
         /// Name of the customer-booked shipper (Grab/Ahamove/...) for a

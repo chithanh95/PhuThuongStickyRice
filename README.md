@@ -141,6 +141,12 @@ do admin upload). DataProtection keys lưu trong database nên nhiều instance 
 
 ## Nhật ký thay đổi
 
+- **2026-10-21** — Sửa lỗi crash khi đặt đơn nhiều món (`OrderLine` trùng key `Guid.Empty` lúc
+  lưu — factory nay gán Guid ngay khi tạo dòng). Checkout: hình thức nhận hàng mặc định đổi thành
+  "Tôi tự đến quán lấy"; mã giới thiệu được kiểm tra ngay trên màn hình (endpoint
+  `GET api/loyalty/referral-check`, sai là báo đỏ dưới ô nhập, không chờ tạo đơn mới lỗi);
+  dòng "Đặt hộ" dùng style giống dòng "Nhớ tên & SĐT"; giãn cách các option thanh toán;
+  ô mã giảm giá cao bằng nút "Áp dụng".
 - **2026-10-21** — Bỏ chặn đặt đơn ngoài giờ mở cửa: khách đặt 24/7, quán xác nhận và làm đơn khi
   mở cửa (trước đây cả checkout lẫn server đều từ chối ngoài khung 6:00–10:30). Checkout/banner
   ngoài giờ chỉ hiện thông báo "vẫn đặt được"; bảo trì + tạm ngưng + nghỉ lễ vẫn chặn như cũ.

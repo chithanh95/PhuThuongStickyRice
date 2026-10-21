@@ -593,6 +593,28 @@ html.dark .co-mobile-bar .co-total small {
     width: 100%;
 }
 
+/* Khoảng cách giữa các option radio (hình thức nhận hàng + thanh toán) ở
+   MỌI bề rộng màn hình: trước đây padding giãn dòng chỉ nằm trong @media
+   mobile nên trên PC các option dính sát nhau, label bị đè nhau
+   (user báo 2026-10-21: COD với VietQR quá gần). */
+.form-check {
+    padding-top: 4px;
+    padding-bottom: 4px;
+    margin-bottom: 6px;
+}
+
+.form-check-label {
+    line-height: 1.45;
+}
+
+/* Ô nhập mã giảm giá cao bằng nút "Áp dụng" bên phải (48px) và thẳng hàng:
+   .form-control của Bootstrap có height cố định ~38px nên trước đây ô
+   nhập bị lệch thấp hơn nút (user báo 2026-10-21). */
+#co-discount {
+    height: auto;
+    min-height: 48px;
+}
+
 /* Mọi checkbox/radio trong form checkout đều 20px ở MỌI bề rộng màn hình.
    Trước đây rule 20px cho .form-check-input chỉ nằm trong @media
    (max-width: 767.98px) nên trên PC/tablet checkbox "Đặt hộ" bị nhỏ hơn

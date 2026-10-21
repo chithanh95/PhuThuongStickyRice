@@ -3,6 +3,16 @@ using System.Collections.Generic;
 
 namespace PhuThuongStickyRice.Web.Components.Shop.Models
 {
+    /// <summary>Kết quả kiểm tra mã giới thiệu tại checkout (api/loyalty/referral-check).</summary>
+    public class ReferralCheckModel
+    {
+        /// <summary>true khi mã tồn tại và không phải mã của chính người mua.</summary>
+        public bool Valid { get; set; }
+
+        /// <summary>Thông báo hiển thị ngay dưới ô nhập mã.</summary>
+        public string Message { get; set; }
+    }
+
     /// <summary>Loyalty account summary (public + admin).</summary>
     public class LoyaltyAccountModel
     {

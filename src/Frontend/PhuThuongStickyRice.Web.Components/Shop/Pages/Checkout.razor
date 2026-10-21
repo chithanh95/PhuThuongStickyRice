@@ -356,7 +356,7 @@ else
                             <label class="form-check-label" for="fm-pickup">🏪 Tôi tự đến quán lấy <small class="text-success">(miễn phí ship)</small></label>
                         </div>
                         </div>
-                        <small class="text-muted d-block mt-1">Quán chuẩn bị sẵn theo mã đơn. Bạn tự đặt xe (Grab/Ahamove...) và báo tài xế đọc mã đơn để lấy — phí ship bạn trả trực tiếp cho tài xế.</small>
+                        <small class="text-muted d-block mt-1">Quán chuẩn bị sẵn món theo mã đơn: bạn tự đến quán lấy, hoặc tự đặt xe (Grab/Ahamove...) và báo tài xế đọc mã đơn để lấy — phí ship bạn trả trực tiếp cho tài xế.</small>
                     </div>
                     @* TT3: shipping fee + estimated time, visible as soon as the
                        fulfillment method is known (before the submit button). *@
@@ -473,10 +473,10 @@ else
                         <textarea id="co-note" class="form-control" @bind="_order.Notes" rows="2"
                                   placeholder="Ví dụ: giao giờ hành chính..."></textarea>
                     </div>
-                    <div class="form-check mb-2">
+                    <div class="form-check co-remember-check mb-2">
                         <input class="form-check-input" type="checkbox" id="recipient-toggle"
                                @bind="_orderForSomeoneElse" />
-                        <label class="form-check-label" for="recipient-toggle">@AppLocalizationService.Translate("shop.other_recipient")</label>
+                        <label class="form-check-label ml-2 mb-0 co-remember-label" for="recipient-toggle">@AppLocalizationService.Translate("shop.other_recipient")</label>
                     </div>
                     @if (_orderForSomeoneElse)
                     {
@@ -782,7 +782,11 @@ else
                     {
                         <div class="form-group">
                             <label for="co-referral">Mã giới thiệu <small class="text-muted">(nếu có)</small></label>
-                            <input id="co-referral" class="form-control" @bind="_order.ReferralCode" placeholder="VD: PT-AB12CD" />
+                            <input id="co-referral" class="form-control" @bind="_order.ReferralCode" @bind:after="CheckReferralCodeAsync" placeholder="VD: PT-AB12CD" />
+                            @if (!string.IsNullOrEmpty(_referralMessage))
+                            {
+                                <small class="@(_referralValid ? "text-success" : "text-danger")">@(_referralValid ? "✓ " : "")@_referralMessage</small>
+                            }
                         </div>
                     }
 
@@ -932,9 +936,10 @@ else
     private string _outsideHoursNotice;
     private string _checkoutError;
 
-    // Fulfillment: "ShipperPickup" (default) or "Pickup". The shop does
-    // not deliver — no address, no delivery fee, no time slot.
-    private string _fulfillment = "ShipperPickup";
+    // Fulfillment: "Pickup" (default, user chốt 2026-10-21) or
+    // "ShipperPickup". The shop does not deliver — no address, no
+    // delivery fee, no time slot.
+    private string _fulfillment = "Pickup";
 
     // Per-field validation messages.
     private string _nameError;
@@ -953,6 +958,12 @@ else
     // Item 105: feature flags (UI gating; backend enforces too).
     // 2026-10-19: _giftWrapEnabled bỏ — user xóa checkbox gói quà khỏi checkout.
     private bool _referralsEnabled = true;
+
+    /// <summary>Thông báo kiểm tra mã giới thiệu hiển thị ngay dưới ô nhập (rỗng = chưa kiểm tra/chưa nhập).</summary>
+    private string _referralMessage;
+
+    /// <summary>true khi mã giới thiệu đã kiểm tra và hợp lệ — hoặc chưa kiểm tra được (fail-open, server chốt lại khi tạo đơn).</summary>
+    private bool _referralValid = true;
     private bool _luckySpinEnabled = true;
     // User 2026-10-21: MoMo mặc định TẮT (chưa có tài khoản doanh nghiệp);
     // fail-closed — không tải được cờ thì vẫn ẩn, khác 2 cờ trên (fail-open).
@@ -1758,6 +1769,36 @@ else
     }
 
     /// <summary>
+    /// Kiểm tra mã giới thiệu ngay trên màn hình (khi khách rời ô nhập và
+    /// một lần nữa trong PlaceOrder trước khi gửi đơn) — user báo
+    /// 2026-10-21: trước đây mã sai chỉ lộ ra khi server ném exception lúc
+    /// tạo đơn. Fail-open: gọi API lỗi thì không chặn đơn (server vẫn
+    /// validate lại ở CreateAsync).
+    /// </summary>
+    private async Task CheckReferralCodeAsync()
+    {
+        var code = (_order.ReferralCode ?? string.Empty).Trim();
+        if (code.Length == 0)
+        {
+            _referralMessage = null;
+            _referralValid = true;
+            return;
+        }
+
+        var result = await ShopEngagementService.CheckReferralCodeAsync(code, _order.CustomerPhone);
+        if (result == null)
+        {
+            // Không kiểm tra được (mạng/API lỗi) — không báo lỗi giả, không chặn.
+            _referralMessage = null;
+            _referralValid = true;
+            return;
+        }
+
+        _referralValid = result.Valid;
+        _referralMessage = result.Message;
+    }
+
+    /// <summary>
     /// Áp mã giảm giá khách nhập: validate qua server với subtotal đã trừ khuyến mãi
     /// giờ vàng (_subtotalForDiscount) để số tiền preview khớp số server thực trừ.
     /// Fail-soft — lỗi mạng chỉ hiện thông báo, không chặn checkout.
@@ -1995,6 +2036,18 @@ else
         {
             _checkoutError = _closedNotice ?? "Quán đang tạm ngừng nhận đơn.";
             return;
+        }
+
+        // Mã giới thiệu: kiểm tra lại ngay trước khi gửi để mã sai được báo
+        // trên màn hình (kèm dòng lỗi dưới ô nhập), không đi tiếp tới server.
+        if (_referralsEnabled && !string.IsNullOrWhiteSpace(_order.ReferralCode))
+        {
+            await CheckReferralCodeAsync();
+            if (!_referralValid)
+            {
+                _checkoutError = _referralMessage ?? "Mã giới thiệu không hợp lệ. Vui lòng kiểm tra lại hoặc bỏ trống mã.";
+                return;
+            }
         }
 
         // S25: chưa đăng nhập + dùng ví/điểm -> bắt buộc OTP của SĐT trước

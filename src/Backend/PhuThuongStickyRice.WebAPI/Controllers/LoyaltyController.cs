@@ -90,6 +90,43 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
         }
 
         /// <summary>
+        /// Public: kiểm tra mã giới thiệu NGAY tại checkout để báo lỗi trên
+        /// màn hình, thay vì để tới lúc tạo đơn server mới ném exception
+        /// (user báo 2026-10-21). Chỉ trả trạng thái hợp lệ + thông báo —
+        /// không lộ thông tin chủ mã. Server vẫn validate lại khi tạo đơn
+        /// (<c>OrderAppService.ValidateReferralAsync</c>) nên endpoint này
+        /// chỉ là lớp UX, không phải cửa an ninh duy nhất.
+        /// </summary>
+        /// <param name="code">Mã giới thiệu khách nhập ở checkout.</param>
+        /// <param name="phone">SĐT người mua — để chặn dùng mã của chính mình.</param>
+        [AllowAnonymous]
+        [HttpGet("referral-check")]
+        public async Task<ActionResult> CheckReferralCode(
+            [FromQuery] string code,
+            [FromQuery] string phone,
+            CancellationToken cancellationToken = default)
+        {
+            if (string.IsNullOrWhiteSpace(code))
+            {
+                return Ok(new { valid = false, message = "Vui lòng nhập mã giới thiệu." });
+            }
+
+            var referrer = await _loyaltyAppService.FindByReferralCodeAsync(code);
+            if (referrer == null)
+            {
+                return Ok(new { valid = false, message = "Mã giới thiệu không tồn tại." });
+            }
+
+            if (!string.IsNullOrWhiteSpace(phone)
+                && PhoneNumber.PhonesMatch(referrer.Phone, phone))
+            {
+                return Ok(new { valid = false, message = "Không thể dùng mã giới thiệu của chính mình." });
+            }
+
+            return Ok(new { valid = true, message = "Mã giới thiệu hợp lệ." });
+        }
+
+        /// <summary>
         /// Kiểm tra request hiện tại có phải của CHÍNH chủ SĐT đang tra
         /// không: đã đăng nhập và JWT username (SĐT của khách) khớp SĐT
         /// truyền vào (so khớp khoan dung định dạng qua
