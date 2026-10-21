@@ -321,14 +321,39 @@ namespace PhuThuongStickyRice.Web.Components.Shop.Services
             response.EnsureSuccessStatusCode();
         }
 
-        /// <summary>Tra cứu đơn hàng public theo mã đơn + SĐT.</summary>
+        /// <summary>
+        /// Tra cứu đơn hàng public theo mã đơn + SĐT. Trả null khi server
+        /// báo không tìm thấy đơn (404 hoặc message "not found") để trang
+        /// hiện đúng thông báo không tìm thấy; lỗi server KHÁC thì ném
+        /// <see cref="InvalidOperationException"/> kèm message thật — trước
+        /// đây mọi lỗi (kể cả 500) đều bị trang nuốt thành "Không tìm thấy
+        /// đơn hàng" (user báo 2026-10-21).
+        /// </summary>
         public async Task<TrackedOrderModel> TrackOrderAsync(string orderNumber, string phone)
         {
             var url = $"api/orders/track?orderNumber={Uri.EscapeDataString(orderNumber ?? string.Empty)}"
                 + $"&phone={Uri.EscapeDataString(phone ?? string.Empty)}";
             // Dispose response để trả kết nối HTTP về pool (CA2000).
             using var response = await _httpClient.GetAsync(url);
-            response.EnsureSuccessStatusCode();
+            if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
+            {
+                return null;
+            }
+
+            if (!response.IsSuccessStatusCode)
+            {
+                var body = await response.Content.ReadAsStringAsync();
+                var message = ParseServerMessage(body);
+                if (message != null
+                    && message.IndexOf("not found", System.StringComparison.OrdinalIgnoreCase) >= 0)
+                {
+                    return null;
+                }
+
+                throw new InvalidOperationException(
+                    message ?? $"Máy chủ gặp lỗi khi tra cứu đơn (mã {(int)response.StatusCode}). Vui lòng thử lại sau.");
+            }
+
             return await response.Content.ReadAs<TrackedOrderModel>();
         }
 
@@ -385,6 +410,13 @@ namespace PhuThuongStickyRice.Web.Components.Shop.Services
                 if (doc.RootElement.TryGetProperty("message", out var messageElement))
                 {
                     return messageElement.GetString();
+                }
+
+                // ABP bọc lỗi app-service dạng { "error": { "message": "..." } }.
+                if (doc.RootElement.TryGetProperty("error", out var errorElement)
+                    && errorElement.TryGetProperty("message", out var nestedMessage))
+                {
+                    return nestedMessage.GetString();
                 }
             }
             catch (System.Text.Json.JsonException)

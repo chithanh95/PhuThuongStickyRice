@@ -141,6 +141,10 @@ do admin upload). DataProtection keys lưu trong database nên nhiều instance 
 
 ## Nhật ký thay đổi
 
+- **2026-10-21** — Trang tra cứu đơn: lỗi server không còn bị báo sai thành "Không tìm thấy đơn
+  hàng" / "SĐT không đúng định dạng" — `TrackOrderAsync` trả null chỉ khi thật sự không thấy đơn,
+  lỗi khác hiện message thật của server; mục lịch sử kiểm tra định dạng SĐT ngay tại máy khách
+  bằng validator dùng chung trước khi gọi API.
 - **2026-10-21** — Sửa lỗi crash khi đặt đơn nhiều món (`OrderLine` trùng key `Guid.Empty` lúc
   lưu — factory nay gán Guid ngay khi tạo dòng). Checkout: hình thức nhận hàng mặc định đổi thành
   "Tôi tự đến quán lấy"; mã giới thiệu được kiểm tra ngay trên màn hình (endpoint

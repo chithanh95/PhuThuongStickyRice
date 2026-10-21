@@ -1338,12 +1338,23 @@
         try
         {
             _order = await ShopService.TrackOrderAsync(_orderNumber.Trim(), _phone.Trim());
+            if (_order == null)
+            {
+                _error = "Không tìm thấy đơn hàng. Vui lòng kiểm tra mã đơn và số điện thoại.";
+                return;
+            }
+
             await RememberLookupAsync();
             await AfterOrderLoadedAsync();
         }
-        catch (Exception)
+        catch (Exception ex)
         {
-            _error = "Không tìm thấy đơn hàng. Vui lòng kiểm tra mã đơn và số điện thoại.";
+            // Lỗi thật (server 500...) phải hiện đúng lý do — trước đây
+            // catch-all nuốt hết thành "Không tìm thấy đơn hàng" kể cả khi
+            // đơn tồn tại nhưng server lỗi (user báo 2026-10-21).
+            _error = string.IsNullOrWhiteSpace(ex.Message)
+                ? "Có lỗi xảy ra khi tra cứu đơn. Vui lòng thử lại sau."
+                : ex.Message;
         }
         finally
         {
@@ -1372,14 +1383,26 @@
             return;
         }
 
+        // Định dạng kiểm tra ngay tại máy khách bằng validator dùng chung.
+        // Trước đây không có bước này mà mọi lỗi API lại bị catch-all báo
+        // thành "không đúng định dạng" — SĐT đúng vẫn bị báo sai khi server
+        // lỗi (user báo 2026-10-21).
+        if (!PhoneValidation.IsValidVnPhone(_historyPhone))
+        {
+            _historyError = "Số điện thoại không đúng định dạng (VD: 0901234567).";
+            return;
+        }
+
         _historyLoading = true;
         try
         {
             _history = await ShopService.GetOrdersByPhoneAsync(_historyPhone.Trim());
         }
-        catch (Exception)
+        catch (Exception ex)
         {
-            _historyError = "Số điện thoại không đúng định dạng (VD: 0901234567).";
+            _historyError = string.IsNullOrWhiteSpace(ex.Message)
+                ? "Không tải được lịch sử đơn hàng. Vui lòng thử lại sau."
+                : ex.Message;
         }
         finally
         {
@@ -2235,6 +2258,11 @@
             try
             {
                 var fresh = await ShopService.TrackOrderAsync(orderNumber, phone);
+                if (fresh == null)
+                {
+                    return; // Đơn không còn truy cập được — giữ nguyên panel hiện tại.
+                }
+
                 await InvokeAsync(() =>
                 {
                     if (!string.Equals(_order?.OrderNumber, orderNumber, StringComparison.Ordinal))
