@@ -141,6 +141,11 @@ do admin upload). DataProtection keys lưu trong database nên nhiều instance 
 
 ## Nhật ký thay đổi
 
+- **2026-10-21** — Đóng dấu ngày giờ tập trung tại `StickyRiceDbContext` khi lưu: entity
+  `ITrackable` mới (Added) chưa có `CreatedDateTime` sẽ được gán thời gian hiện tại, entity sửa
+  (Modified) luôn gán `UpdatedDateTime`. Trước đây chỉ Repository tự chế mới stamp, các luồng
+  CRUD dùng repository ABP mặc định để `CreatedDateTime` xuống DB thành 0001-01-01 (phát hiện
+  qua Orders; model có 80 bảng có cột ngày giờ dùng chung cơ chế).
 - **2026-10-21** — Sửa lỗi bấm Xác nhận đơn bị `DbUpdateConcurrencyException` ("expected 1 row,
   affected 0"): các UPDATE nguyên tử trong `OrderRepository` (`TryTransitionStatusAsync`,
   `TryMarkSpinUsedAsync`) ghi thẳng xuống DB khiến RowVersion của dòng tăng ngay, entity đang

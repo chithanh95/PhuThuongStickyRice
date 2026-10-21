@@ -168,6 +168,54 @@ namespace PhuThuongStickyRice.Persistence
             await _dbContextTransaction.CommitAsync(cancellationToken);
         }
 
+        /// <summary>
+        /// Đóng dấu thời gian tập trung cho mọi entity <see cref="ITrackable"/>
+        /// ngay tại thời điểm lưu: bản ghi mới (Added) chưa có
+        /// <c>CreatedDateTime</c> thì gán thời gian hiện tại; bản ghi sửa
+        /// (Modified) luôn gán <c>UpdatedDateTime</c>. Đây là chốt chặn duy
+        /// nhất phủ mọi đường CRUD — trước đây chỉ Repository tự chế
+        /// (<c>Repositories/Repository.cs</c>) mới stamp, còn các luồng dùng
+        /// repository ABP mặc định hoặc factory/initializer (vd tạo đơn
+        /// hàng) thì <c>CreatedDateTime</c> xuống DB thành 0001-01-01
+        /// (user phát hiện 2026-10-21 qua bảng Orders; rà soát model cho
+        /// thấy 80 bảng có cột ngày giờ dùng chung cơ chế này). Giá trị đã
+        /// được gán tường minh (seed dữ liệu cũ, event handler, Repository
+        /// tự chế) được giữ nguyên nhờ điều kiện chỉ stamp khi đang default.
+        /// </summary>
+        private void StampTrackableTimestamps()
+        {
+            var now = DateTimeOffset.UtcNow;
+            foreach (var entry in ChangeTracker.Entries<ITrackable>())
+            {
+                if (entry.State == EntityState.Added
+                    && entry.Entity.CreatedDateTime == default)
+                {
+                    entry.Entity.CreatedDateTime = now;
+                }
+                else if (entry.State == EntityState.Modified)
+                {
+                    entry.Entity.UpdatedDateTime = now;
+                }
+            }
+        }
+
+        /// <summary>Stamp ngày giờ ITrackable rồi lưu (đường bất đồng bộ — ABP UoW dùng đường này).</summary>
+        /// <param name="cancellationToken">Token hủy.</param>
+        /// <returns>Số bản ghi đã ghi xuống DB.</returns>
+        public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
+        {
+            StampTrackableTimestamps();
+            return await base.SaveChangesAsync(cancellationToken);
+        }
+
+        /// <summary>Stamp ngày giờ ITrackable rồi lưu (đường đồng bộ — seeder/tool dùng đường này).</summary>
+        /// <returns>Số bản ghi đã ghi xuống DB.</returns>
+        public override int SaveChanges()
+        {
+            StampTrackableTimestamps();
+            return base.SaveChanges();
+        }
+
         protected override void OnModelCreating(ModelBuilder builder)
         {
             base.OnModelCreating(builder);
