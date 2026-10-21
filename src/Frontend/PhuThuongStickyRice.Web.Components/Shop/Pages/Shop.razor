@@ -891,8 +891,10 @@ else
         }
         catch (Exception)
         {
-            // Non-critical extras (combos, toppings, best-sellers) failed;
-            // products have their own _loadFailed flag (item 38).
+            // Lưới an toàn cuối: extras lõi đã fail-soft riêng trong
+            // LoadCoreExtrasAsync; catch này bắt phần lỗi còn lại (vd số
+            // lượng đã bán ở LoadRatingAndStockExtrasAsync, lỗi khởi tạo
+            // catalog). Products have their own _loadFailed flag (item 38).
             _loadError = "Một số thông tin bổ sung không tải được. Vui lòng thử lại sau.";
             _products ??= new List<ShopProductModel>();
             // Bug-hunt 2026-10-20: API phụ lỗi mà bỏ qua InitializeProductCatalog
@@ -923,8 +925,10 @@ else
 
     /// <summary>
     /// Tải các thông tin phụ lõi (chi nhánh, combo, topping, tổng đã bán hôm
-    /// nay, xếp hạng bán chạy) trong 1 batch song song. Lỗi → ném cho
-    /// <see cref="LoadCatalogAsync"/> xử lý chung ở catch ngoài.
+    /// nay, xếp hạng bán chạy) trong 1 batch song song. Mỗi nguồn fail-soft
+    /// RIÊNG: nguồn nào lỗi thì giữ giá trị mặc định của nguồn đó, không vì
+    /// 1 API phụ lỗi mà mất cả 4 nguồn còn lại (trước đây lỗi dồn lên catch
+    /// của <see cref="LoadCatalogAsync"/> → mất hết extras + hiện banner lỗi).
     /// </summary>
     private async Task LoadCoreExtrasAsync()
     {
@@ -934,17 +938,44 @@ else
         var todaySoldTask = ShopService.GetTodaySoldAsync();
         var bestSellersTask = ShopService.GetBestSellerIdsAsync();
 
-        await Task.WhenAll(branchesTask, combosTask, toppingsTask, todaySoldTask, bestSellersTask);
-
-        _branches = branchesTask.Result ?? new List<PhuThuongStickyRice.Web.Components.Admin.Models.BranchModel>();
-        _combos = combosTask.Result ?? new List<ComboModel>();
-        _toppings = toppingsTask.Result ?? new List<ToppingModel>();
-        _todaySold = todaySoldTask.Result;
-
-        var rank = 0;
-        foreach (var id in bestSellersTask.Result ?? new List<Guid>())
+        try
         {
-            _productRank[id] = rank++;
+            await Task.WhenAll(branchesTask, combosTask, toppingsTask, todaySoldTask, bestSellersTask);
+        }
+        catch (Exception)
+        {
+            // WhenAll chỉ hoàn tất khi MỌI task đã xong (kể cả task lỗi),
+            // nên xuống tới đây các task đều đã kết thúc — gán theo từng
+            // task thành công ở dưới, task lỗi giữ mặc định.
+        }
+
+        if (branchesTask.IsCompletedSuccessfully)
+        {
+            _branches = branchesTask.Result ?? new List<PhuThuongStickyRice.Web.Components.Admin.Models.BranchModel>();
+        }
+
+        if (combosTask.IsCompletedSuccessfully)
+        {
+            _combos = combosTask.Result ?? new List<ComboModel>();
+        }
+
+        if (toppingsTask.IsCompletedSuccessfully)
+        {
+            _toppings = toppingsTask.Result ?? new List<ToppingModel>();
+        }
+
+        if (todaySoldTask.IsCompletedSuccessfully)
+        {
+            _todaySold = todaySoldTask.Result;
+        }
+
+        if (bestSellersTask.IsCompletedSuccessfully)
+        {
+            var rank = 0;
+            foreach (var id in bestSellersTask.Result ?? new List<Guid>())
+            {
+                _productRank[id] = rank++;
+            }
         }
     }
 

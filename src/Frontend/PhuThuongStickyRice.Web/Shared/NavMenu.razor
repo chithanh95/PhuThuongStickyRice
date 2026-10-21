@@ -215,7 +215,17 @@
     {
         CartState.OnChange += OnCartChanged;
         ShopLocalizationService.OnChange += OnLangChanged;
-        await ShopLocalizationService.InitializeAsync();
+
+        // Fail-soft: lỗi khởi tạo ngôn ngữ (JS interop/localStorage) không
+        // được phép làm chết menu — giữ nhãn mặc định và render bình thường.
+        try
+        {
+            await ShopLocalizationService.InitializeAsync();
+        }
+        catch (Exception)
+        {
+        }
+
         UpdateLangLabel();
     }
 
@@ -234,7 +244,14 @@
     /// <summary>Đảo ngôn ngữ shop VI↔EN (binary toggle).</summary>
     private async Task ToggleLang()
     {
-        await ShopLocalizationService.SetLanguageAsync(ShopLocalizationService.IsEnglish ? "vi" : "en");
+        // Fail-soft như OnInitializedAsync: lỗi lưu ngôn ngữ không làm chết menu.
+        try
+        {
+            await ShopLocalizationService.SetLanguageAsync(ShopLocalizationService.IsEnglish ? "vi" : "en");
+        }
+        catch (Exception)
+        {
+        }
     }
 
     private void OnCartChanged() => InvokeAsync(StateHasChanged);
