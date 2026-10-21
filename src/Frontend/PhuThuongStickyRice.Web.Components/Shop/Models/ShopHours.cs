@@ -91,7 +91,8 @@ namespace PhuThuongStickyRice.Web.Components.Shop.Models
 
         /// <summary>
         /// Hero badge text: "🟢 Đang mở cửa (6:00–10:30)" or
-        /// "🔴 Quán đang nghỉ — mở lại lúc 6:00".
+        /// "🔴 Quán đang nghỉ — vẫn nhận đặt hàng, mở lại lúc 6:00"
+        /// (đặt hàng không bị chặn ngoài giờ — mô hình Shopee, 2026-10-21).
         /// </summary>
         public static (bool IsOpen, string Text) StatusText(string openTime, string closeTime)
         {
@@ -106,7 +107,7 @@ namespace PhuThuongStickyRice.Web.Components.Shop.Models
                 return (true, $"🟢 Đang mở cửa ({openText}–{closeText})");
             }
 
-            return (false, $"🔴 Quán đang nghỉ — mở lại lúc {openText}");
+            return (false, $"🔴 Quán đang nghỉ — vẫn nhận đặt hàng, mở lại lúc {openText}");
         }
 
         /// <summary>

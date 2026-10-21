@@ -593,15 +593,21 @@ html.dark .co-mobile-bar .co-total small {
     width: 100%;
 }
 
+/* Mọi checkbox/radio trong form checkout đều 20px ở MỌI bề rộng màn hình.
+   Trước đây rule 20px cho .form-check-input chỉ nằm trong @media
+   (max-width: 767.98px) nên trên PC/tablet checkbox "Đặt hộ" bị nhỏ hơn
+   checkbox "Nhớ tên & SĐT" (vốn có rule riêng) — user báo 2026-10-21.
+   Rule trong @media vẫn giữ margin-top căn giữa riêng cho mobile. */
+.form-check-input[type="radio"],
+.form-check-input[type="checkbox"] {
+    width: 20px;
+    height: 20px;
+}
+
 .co-remember-check {
     min-height: 44px;
     display: flex;
     align-items: center;
-}
-
-.co-remember-checkbox {
-    width: 20px;
-    height: 20px;
 }
 
 .co-remember-label {

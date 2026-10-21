@@ -65,7 +65,9 @@ deploy/
 - **`/track-order`** — tra cứu đơn bằng SĐT: tự hủy khi đang chờ, sửa số lượng, đánh giá sao,
   xem điểm tích lũy + hạng thành viên.
 - **Nhận ngay** — checkout không còn hẹn giờ/đặt trước; đơn số lượng lớn qua `/dat-cung` phải đặt
-  trước tối thiểu 3 ngày; hệ thống chặn đặt đơn ngày lễ và ngoài khung giờ bán của món.
+  trước tối thiểu 3 ngày. **Đặt hàng 24/7**: ngoài giờ mở cửa vẫn đặt được (mô hình Shopee) —
+  đơn chờ quán xác nhận và chuẩn bị khi mở cửa; chỉ chặn khi quán bật bảo trì, tạm ngưng nhận
+  đơn hoặc nghỉ lễ.
 - **`/dat-tiec`, `/cung-gio`, `/dat-cung`, `/nhuong-quyen`** — đặt tiệc, mâm cúng giỗ/Rằm/mùng 1,
   đặt số lượng lớn, đăng ký nhượng quyền.
 - **Tài khoản khách** (`/dang-nhap`, `/tai-khoan`) — đăng ký bằng SĐT + mật khẩu, lưu nhiều địa chỉ,
@@ -139,6 +141,11 @@ do admin upload). DataProtection keys lưu trong database nên nhiều instance 
 
 ## Nhật ký thay đổi
 
+- **2026-10-21** — Bỏ chặn đặt đơn ngoài giờ mở cửa: khách đặt 24/7, quán xác nhận và làm đơn khi
+  mở cửa (trước đây cả checkout lẫn server đều từ chối ngoài khung 6:00–10:30). Checkout/banner
+  ngoài giờ chỉ hiện thông báo "vẫn đặt được"; bảo trì + tạm ngưng + nghỉ lễ vẫn chặn như cũ.
+  Kèm fix: checkbox/radio ở checkout thống nhất 20px trên mọi màn hình (trước đây trên PC
+  checkbox "Đặt hộ" nhỏ hơn checkbox "Nhớ tên & SĐT").
 - **2026-10-21** — Tắt thanh toán MoMo bằng cờ `momo-payments` (mặc định tắt): ẩn khỏi checkout,
   tra cứu đơn và trang giả lập; backend chặn tạo thanh toán + callback. Bật lại ở `/admin/tinh-nang`
   sau khi có tài khoản MoMo doanh nghiệp + cấu hình thật.

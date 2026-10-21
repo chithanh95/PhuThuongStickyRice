@@ -2958,9 +2958,11 @@ namespace PhuThuongStickyRice.Application.Orders
         }
 
         /// <summary>
-        /// Wave 6b (item 30): rejects checkout when the pause toggle is off
-        /// or the current Vietnam time (UTC+7, no DST) is outside the
-        /// configured open hours. Strict: no grace period after CloseTime.
+        /// Wave 6b (item 30): rejects checkout when maintenance mode is on
+        /// or the shop has paused accepting orders (toggle / holiday).
+        /// Open hours NO LONGER block ordering (user decision 2026-10-21,
+        /// Shopee model): customers order anytime; the shop confirms and
+        /// prepares the order when it opens.
         /// </summary>
         private static void EnsureAcceptingOrders(ShopSettingDto shopSetting)
         {
@@ -2989,31 +2991,9 @@ namespace PhuThuongStickyRice.Application.Orders
                             : $"Quán đang tạm ngừng nhận đơn: {reason}");
             }
 
-            var now = VietnamTime.Now.TimeOfDay;
-            var open = ParseHour(shopSetting.OpenTime, DefaultOpenHour);
-            var close = ParseHour(shopSetting.CloseTime, DefaultCloseHour);
-            if (close > open && (now < open || now >= close))
-            {
-                throw new Domain.Exceptions.DomainException(
-                    $"Quán chỉ nhận đơn từ {FormatHour(open)} đến {FormatHour(close)}. " +
-                    "Vui lòng quay lại trong giờ mở cửa.");
-            }
-        }
-
-        private static TimeSpan ParseHour(string value, TimeSpan fallback)
-        {
-            if (TimeSpan.TryParse(value?.Trim(), out var time)
-                && time >= TimeSpan.Zero && time < TimeSpan.FromDays(1))
-            {
-                return time;
-            }
-
-            return fallback;
-        }
-
-        private static string FormatHour(TimeSpan time)
-        {
-            return $"{(int)time.TotalHours}:{time.Minutes:D2}";
+            // Ngoài giờ mở cửa vẫn nhận đơn (user chốt 2026-10-21, mô hình Shopee):
+            // đơn vào trạng thái chờ, quán xác nhận và chuẩn bị khi mở cửa.
+            // Chỉ bảo trì + tạm ngưng/nghỉ lễ (ở trên) mới chặn tạo đơn.
         }
 
         /// <summary>

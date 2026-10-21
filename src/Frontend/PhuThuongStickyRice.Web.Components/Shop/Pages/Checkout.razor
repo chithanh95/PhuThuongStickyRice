@@ -828,6 +828,10 @@ else
                     {
                         <div class="alert alert-warning mt-2 mb-0">🔴 @_closedNotice</div>
                     }
+                    @if (!_orderingBlocked && !string.IsNullOrEmpty(_outsideHoursNotice))
+                    {
+                        <div class="alert alert-info mt-2 mb-0">🕒 @_outsideHoursNotice</div>
+                    }
                 </div>
             </div>
         </div>
@@ -916,12 +920,16 @@ else
     private bool _minOrderBlocked;
 
     /// <summary>
-    /// Wave 6b (item 30): true when the shop paused orders or is outside
-    /// open hours. Defense in depth — the server also rejects.
+    /// Wave 6b (item 30): true when the shop paused orders (toggle/holiday)
+    /// or is in maintenance. Defense in depth — the server also rejects.
+    /// Outside open hours does NOT block (Shopee model, 2026-10-21).
     /// </summary>
     private bool _orderingBlocked;
 
     private string _closedNotice;
+
+    /// <summary>Thông báo mềm khi đang ngoài giờ mở cửa: vẫn đặt được, quán xác nhận khi mở cửa.</summary>
+    private string _outsideHoursNotice;
     private string _checkoutError;
 
     // Fulfillment: "ShipperPickup" (default) or "Pickup". The shop does
@@ -1567,14 +1575,17 @@ else
     }
 
     /// <summary>
-    /// Wave 6b (item 30): pause toggle + open-hours check for the checkout
-    /// notice and the disabled submit button. Mirrors the server gate in
-    /// OrderAppService.CreateAsync.
+    /// Wave 6b (item 30): pause toggle check for the checkout notice and the
+    /// disabled submit button. Mirrors the server gate in
+    /// OrderAppService.CreateAsync. Open hours do NOT block (user decision
+    /// 2026-10-21, Shopee model) — outside hours only shows an info notice:
+    /// the shop confirms and prepares the order when it opens.
     /// </summary>
     private void RefreshOrderingState()
     {
         _orderingBlocked = false;
         _closedNotice = null;
+        _outsideHoursNotice = null;
 
         if (!_shopSettings.AcceptingOrders)
         {
@@ -1591,9 +1602,10 @@ else
         {
             var open = ShopHours.ParseOpen(_shopSettings.OpenTime);
             var close = ShopHours.ParseClose(_shopSettings.CloseTime);
-            _orderingBlocked = true;
-            _closedNotice = $"Quán chỉ nhận đơn từ {open.Hours}:{open.Minutes:D2} đến {close.Hours}:{close.Minutes:D2}. " +
-                            "Vui lòng quay lại trong giờ mở cửa.";
+            // Không chặn đặt đơn ngoài giờ — chỉ thông báo để khách biết đơn
+            // sẽ được quán xác nhận và chuẩn bị khi mở cửa.
+            _outsideHoursNotice = $"Quán đang ngoài giờ mở cửa ({open.Hours}:{open.Minutes:D2}–{close.Hours}:{close.Minutes:D2}). " +
+                                  "Bạn vẫn đặt hàng bình thường — quán sẽ xác nhận và chuẩn bị đơn khi mở cửa.";
         }
     }
 
