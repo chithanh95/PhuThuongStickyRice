@@ -292,6 +292,28 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             return PhoneNumber.IsValidVn(phone);
         }
 
+        /// <summary>
+        /// Kiểm tra request hiện tại có phải của CHÍNH chủ SĐT không: đã
+        /// đăng nhập và JWT username (SĐT của khách) khớp SĐT truyền vào
+        /// (so khớp khoan dung định dạng qua
+        /// <see cref="PhoneNumber.PhonesMatch"/>). Cùng pattern với
+        /// LoyaltyController/OrdersController — dùng để chặn các endpoint
+        /// theo SĐT trả dữ liệu cá nhân của người khác.
+        /// </summary>
+        /// <param name="phone">SĐT đang được tra cứu.</param>
+        /// <returns>true khi người gọi là chủ của SĐT đó.</returns>
+        private bool IsOwnerRequest(string phone)
+        {
+            if (User?.Identity?.IsAuthenticated != true || string.IsNullOrWhiteSpace(phone))
+            {
+                return false;
+            }
+
+            var identityDigits = PhoneNumber.DigitsOnly(User.Identity.Name);
+            return identityDigits.Length > 0
+                && PhoneNumber.PhonesMatch(identityDigits, phone);
+        }
+
         // ============ Landing engagement: lucky spin (item 28) ============
 
         /// <summary>Body lượt quay vòng quay may mắn: SĐT (mỗi SĐT quay 1 lần/ngày; giải 5k/10k/15k/20k).</summary>
@@ -748,12 +770,28 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             }
 
             var isVip = tier == "Vàng" || totalSpent > VipTotalSpentThresholdVnd;
+            var zaloGroupUrl = isVip ? settings.ZaloVipGroupUrl : null;
+
+            // Audit bảo mật 2026-10-21: totalSpent là dữ liệu cá nhân — chỉ
+            // trả cho CHÍNH chủ SĐT đã đăng nhập (cùng chính sách với
+            // loyalty by-phone). Người gọi ẩn danh chỉ nhận hạng + cờ VIP +
+            // link nhóm Zalo (đặc quyền VIP vốn thiết kế theo SĐT).
+            if (IsOwnerRequest(phone))
+            {
+                return Ok(new
+                {
+                    tier,
+                    isVip,
+                    totalSpent,
+                    zaloGroupUrl
+                });
+            }
+
             return Ok(new
             {
                 tier,
                 isVip,
-                totalSpent,
-                zaloGroupUrl = isVip ? settings.ZaloVipGroupUrl : null
+                zaloGroupUrl
             });
         }
 
@@ -1223,6 +1261,16 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             if (!TryNormalizeVnPhone(phone, out phone))
             {
                 return InvalidPhoneResult();
+            }
+
+            // Audit bảo mật 2026-10-21: lịch sử món đã mua theo SĐT chỉ trả
+            // cho CHÍNH chủ SĐT đã đăng nhập (JWT khớp SĐT) — trước đây chỉ
+            // cần SĐT là xem được người khác đã mua gì. Người gọi khác nhận
+            // danh sách rỗng, giữ nguyên shape { items: [...] } và không lộ
+            // thông tin nào (kể cả việc SĐT có đơn hay không).
+            if (!IsOwnerRequest(phone))
+            {
+                return Ok(new { items = Array.Empty<object>() });
             }
 
             // perf-hunt 2026-10-20: trước đây so bằng trên cột CustomerPhone thô

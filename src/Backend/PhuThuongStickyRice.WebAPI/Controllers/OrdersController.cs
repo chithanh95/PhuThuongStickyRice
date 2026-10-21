@@ -3,6 +3,7 @@
 // (CS8632) nếu thiếu dòng này. Convention theo
 // RateLimiterPolicies/DefaultRateLimiterPolicy.cs.
 #nullable enable
+using PhuThuongStickyRice.Application.Common;
 using PhuThuongStickyRice.Application.Orders;
 using PhuThuongStickyRice.Application.Orders.DTOs;
 using PhuThuongStickyRice.Domain.Exceptions;
@@ -282,9 +283,13 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
         }
 
         /// <summary>
-        /// Public: last order info for a phone number (name + address only),
-        /// used to auto-fill the checkout form. Returns 204 when no previous
-        /// order with an address is found.
+        /// Thông tin đơn gần nhất (tên + địa chỉ) để tự điền form checkout.
+        /// Audit bảo mật 2026-10-21: trước đây chỉ cần SĐT là đọc được tên +
+        /// địa chỉ của người khác — nay CHỈ chủ SĐT đã đăng nhập (JWT khớp
+        /// SĐT) mới nhận dữ liệu. Trường hợp còn lại trả 204 y hệt "chưa có
+        /// đơn nào": không lộ thông tin, và giữ AllowAnonymous + kiểm tra
+        /// chủ ở trong để khách vãng lai ở checkout không bị đá về trang
+        /// đăng nhập bởi handler 401.
         /// </summary>
         [AllowAnonymous]
         [HttpGet("last-by-phone")]
@@ -292,6 +297,11 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             [FromQuery] string phone,
             CancellationToken cancellationToken = default)
         {
+            if (!IsOwnerRequest(phone))
+            {
+                return NoContent();
+            }
+
             var lastOrderInfo = await _orderAppService.GetLastOrderInfoByPhoneAsync(phone);
             if (lastOrderInfo == null)
             {
@@ -299,6 +309,28 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             }
 
             return Ok(lastOrderInfo);
+        }
+
+        /// <summary>
+        /// Kiểm tra request hiện tại có phải của CHÍNH chủ SĐT không: đã
+        /// đăng nhập và JWT username (SĐT của khách) khớp SĐT truyền vào
+        /// (so khớp khoan dung định dạng qua
+        /// <see cref="PhoneNumber.PhonesMatch"/>). Cùng pattern với
+        /// LoyaltyController — nhân viên đăng nhập bằng email nên không
+        /// bao giờ khớp, họ dùng các endpoint admin.
+        /// </summary>
+        /// <param name="phone">SĐT đang được tra cứu.</param>
+        /// <returns>true khi người gọi là chủ của SĐT đó.</returns>
+        private bool IsOwnerRequest(string phone)
+        {
+            if (User?.Identity?.IsAuthenticated != true || string.IsNullOrWhiteSpace(phone))
+            {
+                return false;
+            }
+
+            var identityDigits = PhoneNumber.DigitsOnly(User.Identity.Name);
+            return identityDigits.Length > 0
+                && PhoneNumber.PhonesMatch(identityDigits, phone);
         }
 
         /// <summary>
