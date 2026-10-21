@@ -1,7 +1,7 @@
 # Xôi Phú Thượng — Web đặt hàng & quản lý quán
 
 Web bán hàng các món xôi làng nghề Phú Thượng (Hà Nội) + hệ thống admin quản lý toàn diện:
-khách xem menu, bỏ giỏ, đặt hàng online (shipper tự đến lấy hoặc giao tận nơi);
+khách xem menu, bỏ giỏ, đặt hàng online (khách tự đến lấy hoặc tự book shipper đến lấy — quán không giao hàng);
 admin có dashboard, duyệt đơn, bếp, POS bán tại quầy, quản lý món/khách/tài chính/marketing.
 
 ## Công nghệ
@@ -60,12 +60,14 @@ deploy/
 - **Trang chủ** (`/`) — rebuild theo template Simple Garden: hero fullscreen, giới thiệu làng nghề,
   lưới món đặc trưng, câu chuyện thương hiệu, banner "Đặt xôi ngay", thực đơn theo tab, footer.
 - **`/shop`, `/cart`, `/checkout`** — xem món, giỏ hàng (lưu local), đặt hàng nhận mã đơn
-  (vd `PX-20261015-4821`); thanh toán COD / chuyển khoản (VietQR) / MoMo / ví điểm.
+  (vd `PX-20261015-4821`); thanh toán COD / chuyển khoản (VietQR) / ví điểm.
+  MoMo đang **TẮT** (chưa có tài khoản doanh nghiệp MoMo) — xem mục Ghi chú.
 - **`/track-order`** — tra cứu đơn bằng SĐT: tự hủy khi đang chờ, sửa số lượng, đánh giá sao,
   xem điểm tích lũy + hạng thành viên.
-- **Đặt trước** — hẹn giờ lấy/giao; hệ thống chặn đơn trùng ngày lễ và ngoài khung giờ bán của món.
+- **Nhận ngay** — checkout không còn hẹn giờ/đặt trước; đơn số lượng lớn qua `/dat-cung` phải đặt
+  trước tối thiểu 3 ngày; hệ thống chặn đặt đơn ngày lễ và ngoài khung giờ bán của món.
 - **`/dat-tiec`, `/cung-gio`, `/dat-cung`, `/nhuong-quyen`** — đặt tiệc, mâm cúng giỗ/Rằm/mùng 1,
-  gom đơn văn phòng, đăng ký nhượng quyền.
+  đặt số lượng lớn, đăng ký nhượng quyền.
 - **Tài khoản khách** (`/dang-nhap`, `/tai-khoan`) — đăng ký bằng SĐT + mật khẩu, lưu nhiều địa chỉ,
   khẩu vị yêu thích, lịch sử mua hàng.
 - **Đánh giá** — đánh giá sao sau khi nhận hàng; review có ảnh được tặng mã giảm giá.
@@ -125,6 +127,20 @@ do admin upload). DataProtection keys lưu trong database nên nhiều instance 
 
 ## Ghi chú
 
+- **MoMo đang TẮT** bằng cờ tính năng `momo-payments` (mặc định tắt, từ 2026-10-21): khách không
+  thấy lựa chọn MoMo ở checkout/tra cứu đơn, API tạo thanh toán + callback MoMo đều bị backend chặn.
+  Khi có tài khoản doanh nghiệp MoMo: điền cấu hình thật (PartnerCode/key, `TestMode=false`, endpoint
+  production) rồi bật cờ "Thanh toán MoMo" ở `/admin/tinh-nang` — không cần sửa code.
+- **OTP chưa gửi được thật**: mã OTP (quên mật khẩu, xác thực SĐT...) hiện đi qua `LoggingSmsSender`
+  — chỉ ghi log server. Cần tích hợp nhà cung cấp SMS thật trước khi mở bán công khai.
 - Ảnh món/ảnh landing hiện là **placeholder SVG** — upload ảnh thật khi deploy.
 - Không gửi email thật (tính năng mail đã loại khỏi phạm vi).
 - Muốn chạy job nền (báo cáo tuần Zalo, voucher sinh nhật...): chạy thêm project `BackgroundServer`.
+
+## Nhật ký thay đổi
+
+- **2026-10-21** — Tắt thanh toán MoMo bằng cờ `momo-payments` (mặc định tắt): ẩn khỏi checkout,
+  tra cứu đơn và trang giả lập; backend chặn tạo thanh toán + callback. Bật lại ở `/admin/tinh-nang`
+  sau khi có tài khoản MoMo doanh nghiệp + cấu hình thật.
+- **2026-10-21** — Gia cố giao diện: trang `/shop` tải thông tin phụ fail-soft theo từng nguồn
+  (1 API phụ lỗi không còn làm mất các phần còn lại); menu điều hướng chống lỗi khởi tạo ngôn ngữ.
