@@ -1819,6 +1819,10 @@ namespace PhuThuongStickyRice.Application.Orders
                 FromStatus = from,
                 ToStatus = to,
                 At = DateTime.UtcNow,
+
+                // Đóng dấu audit của base Entity — tránh giá trị mặc định
+                // 0001-01-01 (cùng đợt sửa với Order/OrderLine).
+                CreatedDateTime = DateTimeOffset.UtcNow,
                 ByUser = string.IsNullOrWhiteSpace(byUser) ? "hệ thống" : byUser
             }, autoSave: autoSave);
         }

@@ -141,6 +141,12 @@ do admin upload). DataProtection keys lưu trong database nên nhiều instance 
 
 ## Nhật ký thay đổi
 
+- **2026-10-21** — Sửa lỗi bấm Xác nhận đơn bị `DbUpdateConcurrencyException` ("expected 1 row,
+  affected 0"): các UPDATE nguyên tử trong `OrderRepository` (`TryTransitionStatusAsync`,
+  `TryMarkSpinUsedAsync`) ghi thẳng xuống DB khiến RowVersion của dòng tăng ngay, entity đang
+  track thành cũ → lần lưu entity ngay sau đó khớp 0 dòng. Repository nay đồng bộ RowVersion mới
+  vào entity đang track ngay sau mỗi UPDATE thô thành công; bản ghi lịch sử trạng thái cũng được
+  đóng dấu `CreatedDateTime`.
 - **2026-10-21** — Sửa lỗi không đọc lại được đơn hàng (`SqlNullValueException` ở tra cứu đơn +
   dashboard ngay sau khi tạo đơn đầu tiên): 19 trường văn bản tùy chọn của `Order` (địa chỉ, ghi
   chú, mã giảm giá, lý do hủy...) khai báo lại đúng `string?` — khớp cột DB vốn cho phép NULL;

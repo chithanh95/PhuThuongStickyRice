@@ -135,7 +135,13 @@ namespace PhuThuongStickyRice.Persistence.Repositories
                 .ExecuteUpdateAsync(s => s
                     .SetProperty(x => x.LuckySpinUsed, true),
                     cancellationToken);
-            return affected > 0;
+            if (affected == 0)
+            {
+                return false;
+            }
+
+            await SyncTrackedRowVersionAsync(dbContext, orderId, cancellationToken);
+            return true;
         }
 
         /// <summary>
@@ -169,7 +175,44 @@ namespace PhuThuongStickyRice.Persistence.Repositories
                 .ExecuteUpdateAsync(s => s
                     .SetProperty(x => x.Status, to),
                     cancellationToken);
-            return affected > 0;
+            if (affected == 0)
+            {
+                return false;
+            }
+
+            await SyncTrackedRowVersionAsync(dbContext, orderId, cancellationToken);
+            return true;
+        }
+
+        /// <summary>
+        /// Đồng bộ RowVersion mới vào entity Order đang được track (nếu có)
+        /// sau khi một ExecuteUpdateAsync ghi thẳng xuống DB. SQL Server tự
+        /// tăng cột timestamp ngay khi UPDATE nên entity trong RAM lập tức
+        /// thành "cũ": SaveChanges sau đó (vd UpdateAsync của app service)
+        /// phát UPDATE ... WHERE RowVersion = giá trị cũ, khớp 0 dòng và nổ
+        /// DbUpdateConcurrencyException — user gặp 2026-10-21 khi bấm Xác
+        /// nhận đơn (TryTransitionStatusAsync chạy trước UpdateAsync trong
+        /// PersistStatusTransitionAsync). Chỉnh cả OriginalValue (giá trị EF
+        /// dùng cho mệnh đề WHERE) lẫn giá trị hiện tại; các thay đổi khác
+        /// đang chờ trên entity (CancelReason...) không bị đụng tới. Entity
+        /// không được track trong context này thì không có gì để đồng bộ.
+        /// </summary>
+        private async Task SyncTrackedRowVersionAsync(
+            StickyRiceDbContext dbContext, System.Guid orderId, CancellationToken cancellationToken)
+        {
+            var tracked = dbContext.Set<Order>().Local.FirstOrDefault(x => x.Id == orderId);
+            if (tracked == null)
+            {
+                return;
+            }
+
+            var freshRowVersion = await dbContext.Set<Order>()
+                .AsNoTracking()
+                .Where(x => x.Id == orderId)
+                .Select(x => x.RowVersion)
+                .FirstAsync(cancellationToken);
+            dbContext.Entry(tracked).Property(x => x.RowVersion).OriginalValue = freshRowVersion;
+            tracked.RowVersion = freshRowVersion;
         }
     }
 }
