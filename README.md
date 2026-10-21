@@ -141,6 +141,12 @@ do admin upload). DataProtection keys lưu trong database nên nhiều instance 
 
 ## Nhật ký thay đổi
 
+- **2026-10-21** — Ba sửa theo phản hồi vận hành: (1) Kanban đơn hàng bỏ nút lùi trạng thái
+  (domain chỉ cho đi tiến từng bước — nút lùi bấm luôn bị server từ chối); `GlobalExceptionFilter`
+  nay map `DomainException` thành HTTP 400 kèm message thật thay vì 500, thông điệp chặn chuyển
+  trạng thái dịch sang tiếng Việt. (2) Bỏ nút "Tạo mới" trên topbar admin (tàn dư template Lexa,
+  không có chức năng) và dọn CSS liên quan. (3) Tab lọc ở trang báo giá đặt tiệc
+  (`/admin/dat-tiec`) làm lại dạng pill theo màu chủ đạo Lexa, có dark mode.
 - **2026-10-21** — Đóng dấu ngày giờ tập trung tại `StickyRiceDbContext` khi lưu: entity
   `ITrackable` mới (Added) chưa có `CreatedDateTime` sẽ được gán thời gian hiện tại, entity sửa
   (Modified) luôn gán `UpdatedDateTime`. Trước đây chỉ Repository tự chế mới stamp, các luồng

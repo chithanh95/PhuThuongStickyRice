@@ -4154,9 +4154,9 @@ namespace PhuThuongStickyRice.Application.Orders
                     order.Cancel();
                     break;
                 case OrderStatus.Pending:
-                    throw new Domain.Exceptions.DomainException("Cannot move an order back to 'Pending'.");
+                    throw new Domain.Exceptions.DomainException("Không thể đưa đơn quay lại trạng thái chờ xác nhận.");
                 default:
-                    throw new Domain.Exceptions.DomainException($"Unsupported order status '{status}'.");
+                    throw new Domain.Exceptions.DomainException($"Trạng thái đơn không hỗ trợ: '{status}'.");
             }
         }
     }

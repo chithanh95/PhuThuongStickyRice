@@ -1157,12 +1157,13 @@ namespace PhuThuongStickyRice.Domain.Entities
         {
             if (Status == OrderStatus.Cancelled)
             {
-                throw new DomainException($"Cannot {action} a cancelled order.");
+                throw new DomainException("Đơn đã hủy, không thể thực hiện thao tác này.");
             }
 
             if (Status != expectedStatus)
             {
-                throw new DomainException($"Order must be in '{expectedStatus}' status to {action}. Current status: '{Status}'.");
+                throw new DomainException(
+                    $"Chỉ đơn ở trạng thái '{expectedStatus}' mới thực hiện được bước này. Trạng thái hiện tại: '{Status}'.");
             }
         }
     }

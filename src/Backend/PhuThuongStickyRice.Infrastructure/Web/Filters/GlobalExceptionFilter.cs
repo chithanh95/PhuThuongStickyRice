@@ -31,6 +31,14 @@ namespace PhuThuongStickyRice.Infrastructure.Web.Filters
             {
                 context.Result = new BadRequestObjectResult(context.Exception.Message);
             }
+            else if (context.Exception is Domain.Exceptions.DomainException)
+            {
+                // Lỗi nghiệp vụ (vd chuyển trạng thái đơn sai bước ở kanban):
+                // là lỗi phía thao tác (400) kèm message thật cho người dùng —
+                // trước đây rơi xuống nhánh 500 nên frontend chỉ thấy
+                // "Internal Server Error" (user gặp 2026-10-21).
+                context.Result = new BadRequestObjectResult(context.Exception.Message);
+            }
             else
             {
                 // Message template có parameter (thay vì $"...") để correlation id

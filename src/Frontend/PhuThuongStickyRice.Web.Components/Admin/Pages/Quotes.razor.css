@@ -5,3 +5,69 @@
     max-width: 240px;
 }
 /* ===== END UIUX run 03:05 - Agent3 FIX 4 ===== */
+
+/* ===== Tab lọc trạng thái dạng pill (user yêu cầu làm lại 2026-10-21) =====
+   Thay btn-group Bootstrap cũ: thanh tab bo tròn trên nền xám nhạt, tab
+   đang chọn nổi bật màu chủ đạo Lexa #7a6fbe kèm bóng nhẹ; có dark mode. */
+.quote-tabs {
+    display: inline-flex;
+    flex-wrap: wrap;
+    gap: 2px;
+    padding: 4px;
+    background: #eceef1;
+    border-radius: 999px;
+}
+
+.quote-tab {
+    border: none;
+    background: transparent;
+    color: #495057;
+    font-family: "Poppins", sans-serif;
+    font-size: 14px;
+    font-weight: 500;
+    line-height: 1.4;
+    padding: 9px 20px;
+    min-height: 42px;
+    border-radius: 999px;
+    cursor: pointer;
+    transition: background-color .18s ease, color .18s ease, box-shadow .18s ease;
+}
+
+.quote-tab:hover {
+    background: rgba(122, 111, 190, .12);
+    color: #7a6fbe;
+}
+
+.quote-tab.active {
+    background: #7a6fbe;
+    color: #fff;
+    box-shadow: 0 2px 8px rgba(122, 111, 190, .4);
+}
+
+.quote-tab.active:hover {
+    background: #7a6fbe;
+    color: #fff;
+}
+
+.quote-tab:focus-visible {
+    outline: 2px solid #7a6fbe;
+    outline-offset: 2px;
+}
+
+html.dark .quote-tabs {
+    background: #262640;
+}
+
+html.dark .quote-tab {
+    color: #c9c6d8;
+}
+
+html.dark .quote-tab:hover {
+    background: rgba(122, 111, 190, .25);
+    color: #fff;
+}
+
+html.dark .quote-tab.active {
+    background: #7a6fbe;
+    color: #fff;
+}

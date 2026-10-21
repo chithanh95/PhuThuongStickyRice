@@ -30,14 +30,15 @@
 }
 
 <div class="mb-3">
-    <div class="btn-group btn-group-sm" role="group">
-        @* A11y uiux-2026-10-20: chip lọc là toggle — aria-pressed để trình
-           đọc màn hình biết trạng thái đang lọc. *@
-        <button class="btn @StatusChipClass(null)" aria-pressed="@(_statusFilter == null)" @onclick="() => SetStatus(null)">Tất cả</button>
-        <button class="btn @StatusChipClass("New")" aria-pressed='@(_statusFilter == "New")' @onclick='() => SetStatus("New")'>Mới</button>
-        <button class="btn @StatusChipClass("Contacted")" aria-pressed='@(_statusFilter == "Contacted")' @onclick='() => SetStatus("Contacted")'>Đã liên hệ</button>
-        <button class="btn @StatusChipClass(QuoteStatusConfirmed)" aria-pressed='@(_statusFilter == QuoteStatusConfirmed)' @onclick='() => SetStatus(QuoteStatusConfirmed)'>Đã chốt</button>
-        <button class="btn @StatusChipClass("Cancelled")" aria-pressed='@(_statusFilter == "Cancelled")' @onclick='() => SetStatus("Cancelled")'>Hủy</button>
+    @* Tab lọc dạng pill (làm lại theo yêu cầu user 2026-10-21, thay
+       btn-group Bootstrap cũ). A11y: tab là toggle — aria-pressed để trình
+       đọc màn hình biết trạng thái đang lọc. *@
+    <div class="quote-tabs" role="group" aria-label="Lọc yêu cầu theo trạng thái">
+        <button class="quote-tab @(_statusFilter == null ? "active" : "")" aria-pressed="@(_statusFilter == null)" @onclick="() => SetStatus(null)">Tất cả</button>
+        <button class="quote-tab @(_statusFilter == "New" ? "active" : "")" aria-pressed='@(_statusFilter == "New")' @onclick='() => SetStatus("New")'>Mới</button>
+        <button class="quote-tab @(_statusFilter == "Contacted" ? "active" : "")" aria-pressed='@(_statusFilter == "Contacted")' @onclick='() => SetStatus("Contacted")'>Đã liên hệ</button>
+        <button class="quote-tab @(_statusFilter == QuoteStatusConfirmed ? "active" : "")" aria-pressed='@(_statusFilter == QuoteStatusConfirmed)' @onclick='() => SetStatus(QuoteStatusConfirmed)'>Đã chốt</button>
+        <button class="quote-tab @(_statusFilter == "Cancelled" ? "active" : "")" aria-pressed='@(_statusFilter == "Cancelled")' @onclick='() => SetStatus("Cancelled")'>Hủy</button>
     </div>
 </div>
 
@@ -457,10 +458,6 @@ else
             return null;
         }
     }
-
-    private string StatusChipClass(string status) =>
-        string.Equals(_statusFilter, status, StringComparison.OrdinalIgnoreCase)
-            ? "btn-primary" : "btn-outline-primary";
 
     private static RenderFragment QuoteTypeBadge(string quoteType) => builder =>
     {
