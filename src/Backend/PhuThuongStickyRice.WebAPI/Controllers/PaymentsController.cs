@@ -1,6 +1,8 @@
+using PhuThuongStickyRice.Application.Common;
 using PhuThuongStickyRice.Application.Orders.DTOs;
 using PhuThuongStickyRice.Application.Orders.Payments;
 
+using PhuThuongStickyRice.Domain.Entities;
 using PhuThuongStickyRice.Domain.Exceptions;
 using PhuThuongStickyRice.WebAPI.RateLimiterPolicies;
 using Microsoft.AspNetCore.Authorization;
@@ -25,18 +27,22 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
     {
         private readonly IPaymentConfigProvider _paymentConfig;
         private readonly IMoMoPaymentService _momo;
+        private readonly IFeatureFlagAppService _flags;
 
         /// <summary>Khởi tạo controller thanh toán.</summary>
         /// <param name="paymentConfig">Nguồn cấu hình chuyển khoản (ShopSetting trước, appsettings sau).</param>
         /// <param name="momo">Service xử lý thanh toán MoMo (tạo thanh toán + nhận callback).</param>
+        /// <param name="flags">Cờ tính năng — chặn callback khi MoMo đang tắt.</param>
     public PaymentsController(
             IPaymentConfigProvider paymentConfig,
-            IMoMoPaymentService momo)
+            IMoMoPaymentService momo,
+            IFeatureFlagAppService flags)
         {
             // MoMo create nằm ở OrdersController: POST /api/orders/{id}/momo/create —
             // controller này chỉ nhận callback từ MoMo và cung cấp thông tin chuyển khoản.
             _paymentConfig = paymentConfig;
             _momo = momo;
+            _flags = flags;
         }
 
         /// <summary>
@@ -72,6 +78,15 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
         public async Task<ActionResult> MoMoCallback([FromBody] MoMoCallbackDto callback,
             CancellationToken cancellationToken = default)
         {
+            // User 2026-10-21: MoMo đang tắt (cờ "momo-payments", mặc định
+            // TẮT) → chặn luôn callback để endpoint anonymous này không xác
+            // nhận được thanh toán nào, kể cả callback giả lập TEST (chặn
+            // chuỗi tạo đơn Paid giả đã ghi nhận ở bug-hunt 2026-10-19).
+            if (!await _flags.IsEnabledAsync(FeatureFlag.MoMoPayments))
+            {
+                return NotFound();
+            }
+
             try
             {
                 var order = await _momo.HandleCallbackAsync(callback);

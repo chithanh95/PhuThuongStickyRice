@@ -758,7 +758,7 @@
                 <div class="alert alert-success">Thanh toán thành công! Cảm ơn bạn.</div>
             }
 
-            @if (_order.PaymentMethod == "MoMo" && (_order.PaymentStatus == "Unpaid" || _order.PaymentStatus == "Failed"))
+            @if (_momoEnabled && _order.PaymentMethod == "MoMo" && (_order.PaymentStatus == "Unpaid" || _order.PaymentStatus == "Failed"))
             {
                 @if (!string.IsNullOrEmpty(_momoError))
                 {
@@ -854,6 +854,8 @@
     private bool _loading;
     private bool _markingTransferred;
     private bool _payingMoMo;
+    // Cờ "momo-payments" (mặc định TẮT): ẩn nút thanh toán MoMo khi đang tắt.
+    private bool _momoEnabled;
     private string _error;
     private string _transferMessage;
     private string _transferError;
@@ -1193,6 +1195,7 @@
     {
         AppLocalizationService.OnChange += OnLangChanged;
         await AppLocalizationService.InitializeAsync();
+        await LoadMoMoFlagAsync();
         Funnel.Track(FunnelService.Events.TrackView, new Uri(Navigation.Uri).AbsolutePath);
         // Bug-hunt 2026-10-19: ParseQuery dùng Uri.UnescapeDataString —
         // URL chứa % sai định dạng (vd /track-order?orderNumber=%zz) sẽ ném
@@ -1210,6 +1213,25 @@
         if (query.TryGetValue("orderNumber", out var orderNumber))
         {
             _orderNumber = orderNumber;
+        }
+    }
+
+    /// <summary>
+    /// Cờ "momo-payments": MoMo đang tắt (chưa có tài khoản doanh nghiệp)
+    /// thì ẩn nút thanh toán MoMo cho đơn cũ. Fail-soft kiểu fail-closed:
+    /// không tải được cờ thì coi như tắt — đây là nút thanh toán, thà ẩn
+    /// nhầm còn hơn hiện nút bấm vào là lỗi (backend cũng chặn tạo/callback).
+    /// </summary>
+    private async Task LoadMoMoFlagAsync()
+    {
+        try
+        {
+            var flags = await AdminSystemService.GetFeatureFlagMapAsync();
+            _momoEnabled = flags != null && flags.TryGetValue("momo-payments", out var enabled) && enabled;
+        }
+        catch (Exception)
+        {
+            _momoEnabled = false;
         }
     }
 

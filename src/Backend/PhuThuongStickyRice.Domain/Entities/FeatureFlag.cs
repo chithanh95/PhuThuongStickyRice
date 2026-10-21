@@ -6,7 +6,9 @@ namespace PhuThuongStickyRice.Domain.Entities
     /// Feature flag (cờ tính năng). Admin toggles these at
     /// <c>/admin/tinh-nang</c>; the UI and app services gate optional
     /// features behind them. Seeded defaults keep everything ON so
-    /// nothing changes for existing behavior until the admin flips a flag.
+    /// nothing changes for existing behavior until the admin flips a flag —
+    /// NGOẠI LỆ duy nhất là <see cref="MoMoPayments"/>: mặc định TẮT vì quán
+    /// chưa có tài khoản doanh nghiệp MoMo (user chốt 2026-10-21).
     /// </summary>
     public class FeatureFlag : Entity<Guid>, IAggregateRoot
     {
@@ -14,6 +16,7 @@ namespace PhuThuongStickyRice.Domain.Entities
         public const string GiftWrap = "gift-wrap";
         public const string Referrals = "referrals";
         public const string PromoPopup = "promo-popup";
+        public const string MoMoPayments = "momo-payments";
 
         public const int KeyMaxLength = 100;
         public const int NameMaxLength = 200;

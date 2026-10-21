@@ -3162,6 +3162,16 @@ namespace PhuThuongStickyRice.Application.Orders
         /// <returns>Kết quả tạo thanh toán MoMo (link QR / deeplink).</returns>
         public virtual async Task<MoMoCreatePaymentResultDto> CreateMoMoPaymentAsync(Guid id)
         {
+            // User 2026-10-21: MoMo đang tắt bằng cờ "momo-payments" (mặc
+            // định TẮT — chưa có tài khoản doanh nghiệp). Backend là chốt
+            // chặn thật: frontend chỉ ẩn nút, gọi API trực tiếp vẫn bị chặn
+            // ở đây; callback bị chặn ở PaymentsController.
+            var flags = LazyServiceProvider.LazyGetRequiredService<IFeatureFlagAppService>();
+            if (!await flags.IsEnabledAsync(FeatureFlag.MoMoPayments))
+            {
+                throw new Domain.Exceptions.DomainException("Thanh toán MoMo hiện đang tắt.");
+            }
+
             var order = await FindOrThrowAsync(id);
             // Đơn đã hủy không được tạo link thu tiền mới — khách có thể trả
             // tiền thật cho đơn không còn hiệu lực (hoàn tiền xử lý tay).

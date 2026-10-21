@@ -1,8 +1,10 @@
 @page "/momo-simulator"
 @using PhuThuongStickyRice.Web.Components.Shop.Models
 @using PhuThuongStickyRice.Web.Components.Shop.Services
+@using PhuThuongStickyRice.Web.Components.Admin.Services
 @using static PhuThuongStickyRice.Web.Components.Core.Helpers.PriceFormatter;
 @inject ShopService ShopService
+@inject AdminSystemService AdminSystemService
 @inject NavigationManager Navigation
 
 <h3>MoMo — Trang thanh toán giả lập <span class="badge badge-warning">TEST</span></h3>
@@ -12,7 +14,11 @@
     Không có tiền thật nào được trừ. Sau này khi shop có tài khoản doanh nghiệp MoMo, khách sẽ được đưa tới trang thanh toán thật của MoMo thay vì trang này.
 </div>
 
-@if (string.IsNullOrEmpty(_orderId))
+@if (!_momoEnabled)
+{
+    <div class="alert alert-secondary">Chức năng thanh toán MoMo đang tắt. Vui lòng quay lại trang đặt hàng và chọn hình thức thanh toán khác.</div>
+}
+else if (string.IsNullOrEmpty(_orderId))
 {
     <div class="alert alert-danger">Thiếu thông tin thanh toán (orderId). Vui lòng quay lại trang đặt hàng.</div>
 }
@@ -54,10 +60,29 @@ else
     private long _amount;
     private string _requestId;
     private string _signature;
+    private bool _momoEnabled;
     private bool _submitting;
     private bool _done;
     private bool _success;
     private string _error;
+
+    /// <summary>
+    /// Cờ "momo-payments" (mặc định TẮT): đang tắt thì trang giả lập chỉ
+    /// hiện thông báo, không cho bấm thanh toán. Fail-closed như checkout —
+    /// và backend cũng chặn callback nên trang này không xác nhận được gì.
+    /// </summary>
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            var flags = await AdminSystemService.GetFeatureFlagMapAsync();
+            _momoEnabled = flags != null && flags.TryGetValue("momo-payments", out var enabled) && enabled;
+        }
+        catch (Exception)
+        {
+            _momoEnabled = false;
+        }
+    }
 
     protected override void OnInitialized()
     {

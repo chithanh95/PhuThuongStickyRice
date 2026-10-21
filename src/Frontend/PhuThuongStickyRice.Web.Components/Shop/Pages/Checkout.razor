@@ -558,11 +558,17 @@ else
                                    checked="@(_order.PaymentMethod == "BankTransfer")" @onchange="@(() => _order.PaymentMethod = "BankTransfer")" />
                             <label class="form-check-label" for="pm-bank">@AppLocalizationService.Translate("shop.pay_bank")</label>
                         </div>
+                        @* User 2026-10-21: ẩn lựa chọn MoMo — quán chưa có tài khoản
+                           doanh nghiệp MoMo. Bật lại bằng cờ "momo-payments" ở
+                           /admin/tinh-nang khi đã cấu hình MoMo thật. *@
+                        @if (_momoEnabled)
+                        {
                         <div class="form-check">
                             <input class="form-check-input" type="radio" name="paymentMethod" id="pm-momo"
                                    checked="@(_order.PaymentMethod == "MoMo")" @onchange="@(() => _order.PaymentMethod = "MoMo")" />
                             <label class="form-check-label" for="pm-momo">@AppLocalizationService.Translate("shop.pay_momo") <span class="badge badge-warning">TEST</span></label>
                         </div>
+                        }
                         @* Item 140: wallet payment — shown when the balance covers the total. *@
                         @if (_walletBalance >= _estimatedTotal && _estimatedTotal > 0)
                         {
@@ -940,6 +946,9 @@ else
     // 2026-10-19: _giftWrapEnabled bỏ — user xóa checkbox gói quà khỏi checkout.
     private bool _referralsEnabled = true;
     private bool _luckySpinEnabled = true;
+    // User 2026-10-21: MoMo mặc định TẮT (chưa có tài khoản doanh nghiệp);
+    // fail-closed — không tải được cờ thì vẫn ẩn, khác 2 cờ trên (fail-open).
+    private bool _momoEnabled;
 
     // Item 109: branch selection.
     private List<PhuThuongStickyRice.Web.Components.Admin.Models.BranchModel> _branches;
@@ -1153,6 +1162,7 @@ else
             var flags = await AdminSystemService.GetFeatureFlagMapAsync();
             _referralsEnabled = GetFlag(flags, "referrals", true);
             _luckySpinEnabled = GetFlag(flags, "lucky-spin", true);
+            _momoEnabled = GetFlag(flags, "momo-payments", false);
         }
         catch (Exception)
         {
@@ -1468,6 +1478,14 @@ else
     /// </summary>
     private void EnsurePaymentMethodValid()
     {
+        // MoMo đang tắt (cờ momo-payments): trạng thái MoMo sót lại (state
+        // cũ/đơn cũ) phải quay về COD để không kẹt ở phương thức không còn
+        // chọn được trên giao diện.
+        if (!_momoEnabled && _order.PaymentMethod == "MoMo")
+        {
+            _order.PaymentMethod = "Cod";
+        }
+
         if (_order.PaymentMethod == "Wallet"
             && !(_walletBalance >= _estimatedTotal && _estimatedTotal > 0))
         {

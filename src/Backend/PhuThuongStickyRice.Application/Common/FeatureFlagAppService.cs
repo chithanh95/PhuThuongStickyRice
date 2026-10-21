@@ -57,12 +57,16 @@ namespace PhuThuongStickyRice.Application.Common
         private readonly IAsyncQueryableExecuter _asyncExecuter;
         private readonly Products.IProductCatalogCache _catalogCache;
 
-        private static readonly (string Key, string Name, string Description)[] Defaults =
+        private static readonly (string Key, string Name, string Description, bool DefaultEnabled)[] Defaults =
         {
-            (FeatureFlag.LuckySpin, "Vòng quay may mắn", "Mini-game quay thưởng sau khi đặt đơn thành công."),
-            (FeatureFlag.GiftWrap, "Gói quà", "Cho phép khách chọn gói quà (tính phí) ở bước thanh toán."),
-            (FeatureFlag.Referrals, "Giới thiệu bạn bè", "Nhập mã giới thiệu ở bước thanh toán để nhận điểm thưởng."),
-            (FeatureFlag.PromoPopup, "Popup khuyến mãi", "Hiện popup khuyến mãi trên trang chủ (1 lần/phiên).")
+            (FeatureFlag.LuckySpin, "Vòng quay may mắn", "Mini-game quay thưởng sau khi đặt đơn thành công.", true),
+            (FeatureFlag.GiftWrap, "Gói quà", "Cho phép khách chọn gói quà (tính phí) ở bước thanh toán.", true),
+            (FeatureFlag.Referrals, "Giới thiệu bạn bè", "Nhập mã giới thiệu ở bước thanh toán để nhận điểm thưởng.", true),
+            (FeatureFlag.PromoPopup, "Popup khuyến mãi", "Hiện popup khuyến mãi trên trang chủ (1 lần/phiên).", true),
+            // User 2026-10-21: MoMo mặc định TẮT — quán chưa có tài khoản
+            // doanh nghiệp MoMo. Có tài khoản + cấu hình thật xong thì admin
+            // bật cờ này ở /admin/tinh-nang để mở lại, không cần sửa code.
+            (FeatureFlag.MoMoPayments, "Thanh toán MoMo", "Cho phép khách chọn thanh toán qua ví MoMo ở bước thanh toán và trang tra cứu đơn.", false)
         };
 
         /// <summary>Khởi tạo service quản lý cờ tính năng.</summary>
@@ -81,7 +85,8 @@ namespace PhuThuongStickyRice.Application.Common
 
         /// <summary>
         /// Admin: danh sách toàn bộ cờ kèm metadata (xem doc ở interface).
-        /// Tự seed các cờ mặc định (đang BẬT) nếu bảng còn trống.
+        /// Tự seed các cờ mặc định còn thiếu (trạng thái ban đầu theo khai
+        /// báo DefaultEnabled của từng cờ — riêng MoMo mặc định TẮT).
         /// </summary>
         [Authorize(Roles = "Admin")]
         public virtual async Task<List<FeatureFlagDto>> GetListAsync()
@@ -167,7 +172,7 @@ namespace PhuThuongStickyRice.Application.Common
                     Key = defaultFlag.Key,
                     Name = defaultFlag.Name,
                     Description = defaultFlag.Description,
-                    IsEnabled = true
+                    IsEnabled = defaultFlag.DefaultEnabled
                 })
                 .ToList();
 
