@@ -102,6 +102,10 @@ namespace PhuThuongStickyRice.Domain.Entities
             // khi đặt đơn nhiều món). EF vẫn ghi đè Id bằng giá trị DB khi
             // nạp đơn cũ nên gán ở đây không ảnh hưởng đọc dữ liệu.
             Id = Guid.NewGuid();
+
+            // Đóng dấu thời gian tạo của base Entity (ITrackable.CreatedDateTime)
+            // — cùng lý do như Order: tránh giá trị mặc định 0001-01-01.
+            CreatedDateTime = DateTimeOffset.UtcNow;
             ProductId = productId;
             ProductName = productName;
             UnitPrice = unitPrice;

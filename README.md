@@ -141,6 +141,11 @@ do admin upload). DataProtection keys lưu trong database nên nhiều instance 
 
 ## Nhật ký thay đổi
 
+- **2026-10-21** — Sửa lỗi không đọc lại được đơn hàng (`SqlNullValueException` ở tra cứu đơn +
+  dashboard ngay sau khi tạo đơn đầu tiên): 19 trường văn bản tùy chọn của `Order` (địa chỉ, ghi
+  chú, mã giảm giá, lý do hủy...) khai báo lại đúng `string?` — khớp cột DB vốn cho phép NULL;
+  trước đây EF coi là bắt buộc nên đọc phải NULL là nổ. Không cần migration (schema DB không đổi).
+  Hàm tạo `Order`/`OrderLine` nay đóng dấu `CreatedDateTime` thật thay vì để mặc định 0001-01-01.
 - **2026-10-21** — Trang tra cứu đơn: lỗi server không còn bị báo sai thành "Không tìm thấy đơn
   hàng" / "SĐT không đúng định dạng" — `TrackOrderAsync` trả null chỉ khi thật sự không thấy đơn,
   lỗi khác hiện message thật của server; mục lịch sử kiểm tra định dạng SĐT ngay tại máy khách

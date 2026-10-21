@@ -87,13 +87,13 @@ namespace PhuThuongStickyRice.Domain.Entities
         /// Optional. When provided, the order confirmation email is sent here.
         /// Customers without an email simply do not get an email.
         /// </summary>
-        public string CustomerEmail { get; private set; }
+        public string? CustomerEmail { get; private set; }
 
         /// <summary>Địa chỉ giao hàng (null với đơn tự đến lấy).</summary>
-        public string CustomerAddress { get; private set; }
+        public string? CustomerAddress { get; private set; }
 
         /// <summary>Ghi chú của khách cho cả đơn (vd giờ lấy, dị ứng).</summary>
-        public string Notes { get; private set; }
+        public string? Notes { get; private set; }
 
         /// <summary>
         /// Trạng thái xử lý đơn (Pending → Confirmed → Preparing → Delivering →
@@ -123,7 +123,7 @@ namespace PhuThuongStickyRice.Domain.Entities
         public Money GiftFee { get; private set; }
 
         /// <summary>Discount code applied by the customer, if any.</summary>
-        public string DiscountCode { get; private set; }
+        public string? DiscountCode { get; private set; }
 
         /// <summary>Discount amount subtracted from the subtotal (0 when none).</summary>
         public Money DiscountAmount { get; private set; }
@@ -138,28 +138,28 @@ namespace PhuThuongStickyRice.Domain.Entities
         public Money TierDiscount { get; private set; }
 
         /// <summary>Referrer's referral code used at checkout, if any.</summary>
-        public string ReferralCodeUsed { get; private set; }
+        public string? ReferralCodeUsed { get; private set; }
 
         /// <summary>Optional VAT invoice tax code.</summary>
-        public string TaxCode { get; private set; }
+        public string? TaxCode { get; private set; }
 
         /// <summary>Optional VAT invoice company name.</summary>
-        public string CompanyName { get; private set; }
+        public string? CompanyName { get; private set; }
 
         /// <summary>True when the order total reached the deposit threshold on bank transfer.</summary>
         public bool RequiresDeposit { get; private set; }
 
         /// <summary>Recipient (when ordering for someone else).</summary>
-        public string RecipientName { get; private set; }
+        public string? RecipientName { get; private set; }
 
         /// <summary>SĐT người nhận hộ (khi đặt cho người khác; null = khách tự nhận).</summary>
-        public string RecipientPhone { get; private set; }
+        public string? RecipientPhone { get; private set; }
 
         /// <summary>Gift packaging requested.</summary>
         public bool IsGift { get; private set; }
 
         /// <summary>Lời nhắn in kèm khi gói quà (null khi không phải quà tặng).</summary>
-        public string GiftMessage { get; private set; }
+        public string? GiftMessage { get; private set; }
 
         /// <summary>Customer already used the post-checkout lucky spin for this order.</summary>
         public bool LuckySpinUsed { get; private set; }
@@ -191,7 +191,7 @@ namespace PhuThuongStickyRice.Domain.Entities
         public Guid? BranchId { get; private set; }
 
         /// <summary>Branch display name (denormalized at creation).</summary>
-        public string BranchName { get; private set; }
+        public string? BranchName { get; private set; }
 
         /// <summary>Assigns or clears the branch (admin).</summary>
         public void ChangeBranch(Guid? branchId, string branchName)
@@ -204,10 +204,10 @@ namespace PhuThuongStickyRice.Domain.Entities
         /// Idempotency key from the checkout attempt. A retry with the same
         /// key within 24h returns the existing order instead of creating a new one.
         /// </summary>
-        public string IdempotencyKey { get; private set; }
+        public string? IdempotencyKey { get; private set; }
 
         /// <summary>Auto-applied "giờ vàng" promotion name, if any.</summary>
-        public string PromotionName { get; private set; }
+        public string? PromotionName { get; private set; }
 
         /// <summary>Auto-applied promotion discount in the order currency.</summary>
         public decimal PromotionDiscountAmount { get; private set; }
@@ -216,13 +216,13 @@ namespace PhuThuongStickyRice.Domain.Entities
         /// Where the order came from (item 133): "Web", "QR bàn",
         /// "Link chia sẻ" or "Nhóm". Set at creation from shop entry params.
         /// </summary>
-        public string Source { get; private set; }
+        public string? Source { get; private set; }
 
         /// <summary>
         /// Wave 6a (item 23): scheduled delivery slot chosen at checkout,
         /// e.g. "06:00–06:30". Null = giao ngay (deliver ASAP).
         /// </summary>
-        public string DeliverySlot { get; private set; }
+        public string? DeliverySlot { get; private set; }
 
         /// <summary>
         /// Item 128: true when a MoMo IPN callback was matched to this order
@@ -240,7 +240,7 @@ namespace PhuThuongStickyRice.Domain.Entities
         /// Internal staff note (Wave 6c, item 33). Nullable; never exposed
         /// on public endpoints.
         /// </summary>
-        public string AdminNote { get; private set; }
+        public string? AdminNote { get; private set; }
 
         /// <summary>
         /// Name of the customer-booked shipper (Grab/Ahamove/...) who will
@@ -248,10 +248,10 @@ namespace PhuThuongStickyRice.Domain.Entities
         /// it in at checkout or the staff may record it later.
         /// Distinct from <see cref="Shipper"/> (the shop's own delivery staff).
         /// </summary>
-        public string PickupShipperName { get; private set; }
+        public string? PickupShipperName { get; private set; }
 
         /// <summary>Phone of the customer-booked pickup shipper. Optional.</summary>
-        public string PickupShipperPhone { get; private set; }
+        public string? PickupShipperPhone { get; private set; }
 
         /// <summary>
         /// When the shipper/customer collected a ShipperPickup order at the
@@ -430,6 +430,10 @@ namespace PhuThuongStickyRice.Domain.Entities
             PaymentStatus = PaymentStatus.Unpaid;
             FulfillmentMethod = fulfillmentMethod;
             CreatedAt = DateTime.UtcNow;
+
+            // Đóng dấu thời gian tạo của base Entity (ITrackable.CreatedDateTime):
+            // trước đây không gán nên DB nhận giá trị mặc định 0001-01-01.
+            CreatedDateTime = new DateTimeOffset(CreatedAt);
             _lines.AddRange(lines);
 
             var currency = lines.First().LineTotal.Currency;
@@ -1066,7 +1070,7 @@ namespace PhuThuongStickyRice.Domain.Entities
         /// Item 233: lý do hủy đơn (khách chọn hoặc nhân viên chọn khi hủy).
         /// Null với đơn chưa hủy hoặc đơn hủy bởi hệ thống không ghi lý do.
         /// </summary>
-        public string CancelReason { get; private set; }
+        public string? CancelReason { get; private set; }
 
         /// <summary>
         /// Item 233: ghi lý do hủy (chuẩn hóa trim, cắt tối đa
