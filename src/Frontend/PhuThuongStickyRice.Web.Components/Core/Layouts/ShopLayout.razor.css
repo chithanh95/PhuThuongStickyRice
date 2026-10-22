@@ -688,3 +688,23 @@ html.dark .shp-back:hover {
     display: block;
     margin-bottom: 10px;
 }
+
+/* 2026-10-22 (user): mobile header CHI 1 DONG, chi logo hinh tron — an chu
+   thuong hieu + cac muc chu dai (nut Dat ngay, so hotline, khoi tai khoan);
+   dang nhap/tai khoan van co trong menu hamburger. Hang: [back] logo ...
+   icon chuc nang (co, goi, gio, A+, sang/toi) + hamburger cuoi hang. */
+@media (max-width: 767.98px) {
+    .shp-logo-text { display: none; }
+    .shp-order-btn { display: none; }
+    .shp-hotline-num { display: none; }
+    .shp-header-right .shp-account,
+    .shp-header-right .shp-user,
+    .shp-header-right .shp-admin-link { display: none; }
+}
+@media (max-width: 480px) {
+    .shp-header-inner { flex-wrap: nowrap; row-gap: 0; padding: 8px; gap: 2px; }
+    .shp-logo { order: 1; flex: 0 0 auto; }
+    .shp-header-right { order: 2; flex: 0 1 auto; width: auto; max-width: none; gap: 2px; }
+    .shp-hamburger { order: 3; }
+    .shp-logo-img { width: 40px; height: 40px; }
+}

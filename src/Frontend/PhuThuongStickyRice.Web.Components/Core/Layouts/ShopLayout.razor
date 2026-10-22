@@ -49,7 +49,7 @@
                 @if (!string.IsNullOrEmpty(_hotline))
                 {
                     <a class="shp-hotline" href="tel:@_hotline" title="Gọi cho quán">
-                        📞 @_hotline
+                        📞 <span class="shp-hotline-num">@_hotline</span>
                     </a>
                 }
                 <a class="shp-cart" href="/cart" title="@AppLocalizationService.Translate("common.cart")"

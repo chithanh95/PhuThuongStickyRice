@@ -137,39 +137,6 @@ else
 }
 }
 
-@if (_combos != null && _combos.Count > 0)
-{
-    <h4 class="mb-3">🎉 Combo gia đình <small class="text-muted">— tiết kiệm hơn gọi lẻ</small></h4>
-    <div class="row">
-        @foreach (var combo in _combos)
-        {
-            <div class="col-md-6 mb-4" @key="combo.Id">
-                <div class="card h-100 border-warning">
-                    <div class="card-body">
-                        <h5 class="card-title">
-                            @combo.Name
-                            <span class="badge badge-warning ml-1">COMBO</span>
-                        </h5>
-                        <p class="card-text text-muted small">@combo.Description</p>
-                        <ul class="list-unstyled small mb-2">
-                            @foreach (var comboItem in combo.Items)
-                            {
-                                <li>• @comboItem.ProductName <span class="text-muted">× @comboItem.Quantity</span></li>
-                            }
-                        </ul>
-                        <div class="d-flex align-items-center justify-content-between">
-                            <strong class="text-danger" style="font-size: 1.3rem;">@FormatPrice(combo.Price)</strong>
-                            <button class="btn btn-primary" disabled="@OrdersPaused" @onclick="() => AddComboToCart(combo)">
-                                Thêm combo vào giỏ
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        }
-    </div>
-}
-
 @if (_products == null)
 {
     <p><em>Đang tải sản phẩm...</em></p>
@@ -178,49 +145,6 @@ else
 {
     <!-- Filters: categories + dietary tags + sort + branch -->
     
-
-    @* Item 118: time-based suggestions — pure client-side by hour. *@
-    @if (_suggestions.Count > 0)
-    {
-        <h4 class="mb-3">@_suggestionTitle</h4>
-        <div class="row">
-            @foreach (var product in _suggestions)
-            {
-                <div class="col-6 col-md-4 col-lg-3 mb-4" @key="product.Id">
-                    <div class="card h-100 border-info">
-                        <a href="javascript:void(0)" @onclick="() => OpenQuickView(product)" title="Xem nhanh @product.Name">
-                            <img class="card-img-top" src="@ProductImage(product)" alt="@product.Name" loading="lazy" />
-                        </a>
-                        <div class="card-body py-2">
-                            <a href="javascript:void(0)" class="text-dark" @onclick="() => OpenQuickView(product)"><strong>@product.Name</strong></a>
-                            <div class="d-flex justify-content-between align-items-center mt-1">
-                                @* bug-hunt 2026-10-20: gợi ý từng hiện giá gốc (product.Price)
-                                   trong khi card chính niêm yết giá KM (item 256) và AddToCart
-                                   cũng cộng giỏ theo giá KM — khách thấy 25.000đ nhưng giỏ
-                                   tính 20.000đ. Hiển thị cùng luật với card chính. *@
-                                @if (CardPromoPrice(product) is decimal suggPromo)
-                                {
-                                    <span><s class="text-muted small mr-1">@FormatPrice(DisplayPrice(product))</s><strong class="text-danger">@FormatPrice(suggPromo)</strong></span>
-                                }
-                                else
-                                {
-                                    <strong class="text-danger">@FormatPrice(DisplayPrice(product))</strong>
-                                }
-                                <button class="btn btn-sm btn-primary" @onclick="() => AddToCart(product)" disabled="@(!CanOrder(product))"
-                                        aria-label="@(CanOrder(product) ? $"Thêm {product.Name} vào giỏ hàng" : null)">@AddButtonLabel(product, "+ Thêm")</button>
-                            </div>
-                            @* Item 101: ask about this dish on Zalo. *@
-                            @if (ShowZaloButton)
-                            {
-                                <a class="btn btn-sm btn-outline-success btn-block mt-1" href="@ZaloChatUrl(product.Name)"
-                                   target="_blank" rel="noopener" title="Hỏi về @product.Name qua Zalo">💬 Hỏi qua Zalo</a>
-                            }
-                        </div>
-                    </div>
-                </div>
-            }
-        </div>
-    }
 
     @if (_filteredProducts.Count == 0)
     {
@@ -648,7 +572,6 @@ else
     private List<ShopProductModel> _products;
     private List<ShopProductModel> _filteredProducts = new List<ShopProductModel>();
     private List<string> _categories = new List<string>();
-    private List<ComboModel> _combos;
     private List<ToppingModel> _toppings;
     private Dictionary<Guid, int> _productRank = new Dictionary<Guid, int>();
     private long _todaySold;
@@ -700,8 +623,6 @@ else
     private List<PhuThuongStickyRice.Web.Components.Admin.Models.BranchModel> _branches;
 
     // Item 118: time-based suggestions (pure client-side by hour).
-    private List<ShopProductModel> _suggestions = new List<ShopProductModel>();
-    private string _suggestionTitle;
 
     // Item 95: table QR — ?ban={label} shows a "đang đặt tại bàn" chip.
     private string _tableLabel;
@@ -924,7 +845,7 @@ else
     }
 
     /// <summary>
-    /// Tải các thông tin phụ lõi (chi nhánh, combo, topping, tổng đã bán hôm
+    /// Tải các thông tin phụ lõi (chi nhánh, topping, tổng đã bán hôm
     /// nay, xếp hạng bán chạy) trong 1 batch song song. Mỗi nguồn fail-soft
     /// RIÊNG: nguồn nào lỗi thì giữ giá trị mặc định của nguồn đó, không vì
     /// 1 API phụ lỗi mà mất cả 4 nguồn còn lại (trước đây lỗi dồn lên catch
@@ -933,14 +854,13 @@ else
     private async Task LoadCoreExtrasAsync()
     {
         var branchesTask = AdminSystemService.GetActiveBranchesAsync();
-        var combosTask = ShopService.GetCombosAsync();
         var toppingsTask = ShopService.GetToppingsAsync();
         var todaySoldTask = ShopService.GetTodaySoldAsync();
         var bestSellersTask = ShopService.GetBestSellerIdsAsync();
 
         try
         {
-            await Task.WhenAll(branchesTask, combosTask, toppingsTask, todaySoldTask, bestSellersTask);
+            await Task.WhenAll(branchesTask, toppingsTask, todaySoldTask, bestSellersTask);
         }
         catch (Exception)
         {
@@ -952,11 +872,6 @@ else
         if (branchesTask.IsCompletedSuccessfully)
         {
             _branches = branchesTask.Result ?? new List<PhuThuongStickyRice.Web.Components.Admin.Models.BranchModel>();
-        }
-
-        if (combosTask.IsCompletedSuccessfully)
-        {
-            _combos = combosTask.Result ?? new List<ComboModel>();
         }
 
         if (toppingsTask.IsCompletedSuccessfully)
@@ -1050,7 +965,6 @@ else
             .ToList();
 
         ApplyFilters();
-        BuildSuggestions();
     }
 
     /// <summary>
@@ -1076,46 +990,6 @@ else
     {
         Navigation.NavigateTo("/shop", forceLoad: true);
     }
-
-    /// <summary>
-    /// Item 118: time-based suggestions, pure client-side by local hour:
-    /// 5h–10h → savory (tag "man") products; 17h–23h → evening picks.
-    /// </summary>
-    private void BuildSuggestions()
-    {
-        _suggestions = new List<ShopProductModel>();
-        _suggestionTitle = null;
-
-        if (_products == null || _products.Count == 0)
-        {
-            return;
-        }
-
-        var hour = DateTime.Now.Hour;
-        if (hour >= SuggestMorningStartHour && hour < SuggestMorningEndHour)
-        {
-            _suggestionTitle = "☀️ Gợi ý buổi sáng";
-            _suggestions = _products
-                .Where(p => (p.Tags ?? string.Empty).Contains("man"))
-                .Take(SuggestMaxItems)
-                .ToList();
-        }
-        else if (hour >= SuggestEveningStartHour && hour < SuggestEveningEndHour)
-        {
-            _suggestionTitle = "🌙 Gợi ý buổi tối";
-            _suggestions = _products.Take(SuggestMaxItems).ToList();
-        }
-    }
-
-    /// <summary>
-    /// Item 118: khung giờ gợi ý theo giờ địa phương — sáng: món mặn
-    /// (tag "man"); tối: món bán chạy. Tách thành hằng số để dễ đổi khung giờ.
-    /// </summary>
-    private const int SuggestMorningStartHour = 5;
-    private const int SuggestMorningEndHour = 10;
-    private const int SuggestEveningStartHour = 17;
-    private const int SuggestEveningEndHour = 23;
-    private const int SuggestMaxItems = 3;
 
     // AGENT2-CODEQUALITY-20261020: batch marker (dead filter handlers removed, magic numbers -> named consts).
     // SH2 "Lọc theo nhu cầu": preset "biếu tặng" = món giá từ 35.000đ trở lên.
@@ -1458,19 +1332,6 @@ else
     private void CloseUpsell()
     {
         _upsellVisible = false;
-    }
-
-    private void AddComboToCart(ComboModel combo)
-    {
-        // SH5: combo cũng phải tôn trọng trạng thái tạm ngưng như món lẻ
-        // (AddToCart/AddQuickViewToCart đã guard, chỗ này bị sót).
-        if (OrdersPaused)
-        {
-            Toasts.Show("⏸ Quán đang tạm ngưng nhận đơn. Vui lòng quay lại sau.");
-            return;
-        }
-        CartState.AddCombo(combo);
-        Toasts.Show($"Đã thêm {combo.Name} vào giỏ", "Xem giỏ hàng", "/cart");
     }
 
     // ---------- Quick view ----------

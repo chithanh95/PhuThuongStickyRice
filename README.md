@@ -141,6 +141,11 @@ do admin upload). DataProtection keys lưu trong database nên nhiều instance 
 
 ## Nhật ký thay đổi
 
+### 2026-10-22 — Header mobile 1 dòng + sửa font tên quán + bỏ mục Gợi ý & Combo gia đình ở shop
+- **Font tên quán (PC)**: CSS khai font 'Lora' cho chữ thương hiệu nhưng app.css chưa từng tải Lora → trình duyệt lùi về Georgia, lỗi dấu chồng tiếng Việt ("Huyề n"). Nay @import tải thêm Lora (có subset tiếng Việt) cùng Cormorant Garamond — "Xôi Huyền" hiển thị đúng dấu ở header shop + landing + footer.
+- **Header mobile (shop + landing)**: chỉ còn logo hình tròn, ẩn chữ thương hiệu; header shop về **1 dòng duy nhất** (bỏ kiểu 2 hàng ở ≤480px) — ẩn nút "Đặt ngay", ẩn số hotline (giữ icon 📞 bấm gọi), ẩn khối tài khoản (đăng nhập/tài khoản vẫn có trong menu hamburger); landing ẩn chữ thương hiệu ở ≤768px và header không xuống dòng.
+- **Trang shop bỏ 2 mục**: "Gợi ý buổi sáng / Gợi ý buổi tối" theo giờ và "Combo gia đình" (gỡ cả giao diện + code liên quan trong Shop.razor). Combo sẽ được tạo/quản lý ở web admin (admin đã có sẵn mục Combo); service/model combo phía khách GIỮ NGUYÊN vì trang tra cứu đơn vẫn cần để hiển thị các đơn cũ có combo.
+
 - **2026-10-22** — **Đưa hình logo vào các vị trí thương hiệu trên web** (trước đây chỉ
   là chữ): header landing + header shop (desktop và mobile dùng chung một header), sidebar
   admin (thay icon đồng hồ mẫu Lexa), trang đăng nhập nhân viên/khách và quên mật khẩu

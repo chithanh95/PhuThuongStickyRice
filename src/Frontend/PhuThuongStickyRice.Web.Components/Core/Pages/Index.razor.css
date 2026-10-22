@@ -2433,3 +2433,9 @@ html.dark .sg-share-btn {
 .sg-ship-cta { margin-top: 16px; }
 .sg-ship-note { font-size: 13px; margin-top: 10px; }
 .sg-container-narrow { max-width: 600px; margin: 0 auto; }
+
+/* 2026-10-22 (user): mobile header landing CHI logo hinh, 1 dong */
+@media (max-width: 768px) {
+    .sg-logo-text { display: none; }
+    .sg-header-inner { flex-wrap: nowrap; }
+}
