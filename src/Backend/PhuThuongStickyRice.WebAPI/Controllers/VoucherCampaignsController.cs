@@ -20,7 +20,7 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
     [EnableRateLimiting(RateLimiterPolicyNames.DefaultPolicy)]
     [Authorize(Roles = "Admin")]
     [Produces("application/json")]
-    [Route("api/[controller]")]
+    [Route("api/voucher-campaigns")]
     [ApiController]
     public class VoucherCampaignsController : ControllerBase
     {

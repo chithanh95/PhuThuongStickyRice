@@ -2015,7 +2015,28 @@ else
         }
     }
 
+    /// <summary>
+    /// Đặt hàng — wrapper giữ guard cứng chống bấm đúp ở đầu handler
+    /// (tester A, 2026-10-22): trước đây _submitting chỉ bật sau bước
+    /// kiểm tra mã giới thiệu (1 call mạng) nên còn cửa sổ bấm 2 lần
+    /// chạy 2 luồng song song. Mọi lối ra của PlaceOrderCore (kể cả các
+    /// return sớm khi validate) đều đi qua finally ở đây nên cờ luôn tắt.
+    /// </summary>
     private async Task PlaceOrder()
+    {
+        if (_submitting) return;
+        _submitting = true;
+        try
+        {
+            await PlaceOrderCore();
+        }
+        finally
+        {
+            _submitting = false;
+        }
+    }
+
+    private async Task PlaceOrderCore()
     {
         _checkoutError = null;
 
@@ -2059,7 +2080,6 @@ else
             return;
         }
 
-        _submitting = true;
         try
         {
             BuildOrderPayload();

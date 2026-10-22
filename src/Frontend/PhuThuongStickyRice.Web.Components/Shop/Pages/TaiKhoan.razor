@@ -57,9 +57,13 @@
         <div class="card mb-4">
             <div class="card-body">
                 <h5 class="card-title">⭐ Hạng thành viên</h5>
-                @if (_loyalty == null)
+                @if (_loyalty == null && !_loyaltyFailed)
                 {
                     <p class="text-muted"><em>Đang tải hạng thành viên...</em></p>
+                }
+                else if (_loyaltyFailed)
+                {
+                    <p class="text-muted"><em>Không tải được hạng thành viên. Vui lòng tải lại trang.</em></p>
                 }
                 else
                 {
@@ -392,6 +396,7 @@
 
     // Lịch sử đơn hàng + hạng thành viên.
     private LoyaltyAccountModel _loyalty;
+    private bool _loyaltyFailed;
     private List<TrackedOrderModel> _orders;
     private bool _reorderBusy;
 
@@ -413,15 +418,16 @@
                     Navigation.NavigateTo("/admin/ho-so", replace: true);
                     return;
                 }
-                // perf-hunt 2026-10-19: 4 read độc lập chạy song song (mỗi loader
-                // fail-soft riêng như cũ, ghi field riêng). Riêng _addresses
-                // giữ nguyên ngữ cảnh: lỗi ở đây vẫn rớt về catch ngoài như cũ.
-                var addressesTask = CustomerAddressService.GetMineAsync();
+                // 4 read độc lập chạy song song, mỗi loader fail-soft riêng,
+                // ghi field riêng (4 service khác nhau). Địa chỉ nay cũng
+                // fail-soft riêng qua LoadAddressesAsync (tester A,
+                // 2026-10-22): trước đây lỗi tải địa chỉ rớt về catch ngoài
+                // cùng, trang báo sai "Bạn cần đăng nhập" dù phiên còn tốt.
+                var addressesTask = LoadAddressesAsync();
                 var profileTask = LoadProfileAsync();
                 var loyaltyTask = LoadLoyaltyAsync();
                 var ordersTask = LoadOrdersAsync();
-                _addresses = await addressesTask;
-                await Task.WhenAll(profileTask, loyaltyTask, ordersTask);
+                await Task.WhenAll(addressesTask, profileTask, loyaltyTask, ordersTask);
 
                 // Item 137: đồng bộ giỏ hàng từ server (nếu có).
                 // codequality-team 2026-10-20 run-0245 Agent3-BestPractices: ghi log
@@ -463,14 +469,41 @@
         }
     }
 
-    /// <summary>Tải hạng thành viên theo SĐT đăng nhập — lỗi thì ẩn thẻ hạng.</summary>
+    /// <summary>
+    /// Tải hạng thành viên theo SĐT đăng nhập — lỗi thì đánh dấu
+    /// _loyaltyFailed để giao diện báo không tải được (tester A,
+    /// 2026-10-22): trước đây catch nuốt lỗi, _loyalty ở null nên trang
+    /// kẹt dòng "Đang tải..." vĩnh viễn.
+    /// </summary>
     private async Task LoadLoyaltyAsync()
     {
         try
         {
             _loyalty = await ShopEngagementService.GetLoyaltyByPhoneAsync(_userName);
         }
-        catch (Exception) { }
+        catch (Exception)
+        {
+            _loyaltyFailed = true;
+        }
+    }
+
+    /// <summary>
+    /// Tải sổ địa chỉ của khách — fail-soft riêng (tester A, 2026-10-22):
+    /// lỗi thì danh sách trống + _addrError hiện ở mục địa chỉ, không để
+    /// lỗi rớt ra catch ngoài của OnInitialized (nơi từng báo sai
+    /// "Bạn cần đăng nhập" dù phiên đăng nhập còn tốt).
+    /// </summary>
+    private async Task LoadAddressesAsync()
+    {
+        try
+        {
+            _addresses = await CustomerAddressService.GetMineAsync();
+        }
+        catch (Exception ex)
+        {
+            _addresses = new List<CustomerAddressModel>();
+            _addrError = $"Không tải được sổ địa chỉ: {ex.Message}";
+        }
     }
 
     /// <summary>Tải lịch sử đơn hàng theo SĐT — lỗi thì hiện danh sách trống.</summary>
@@ -494,6 +527,9 @@
     /// </summary>
     private async Task ChangePasswordAsync()
     {
+        // Guard cứng chống bấm đúp ở đầu handler (tester A, 2026-10-22) —
+        // không chỉ dựa vào disabled của nút như trước.
+        if (_pwBusy) return;
         _pwError = null;
         _pwInfo = null;
         if (string.IsNullOrWhiteSpace(_currentPw) || string.IsNullOrWhiteSpace(_newPw))
@@ -620,7 +656,11 @@
             await CustomerAddressService.SetDefaultAsync(id);
             _addresses = await CustomerAddressService.GetMineAsync();
         }
-        catch (Exception) { }
+        catch (Exception)
+        {
+            // Báo lỗi cho khách thay vì nuốt im lặng (tester A, 2026-10-22).
+            _addrError = "Không đặt được địa chỉ mặc định. Vui lòng thử lại.";
+        }
     }
 
     private async Task DeleteAsync(Guid id)
@@ -630,7 +670,11 @@
             await CustomerAddressService.DeleteAsync(id);
             _addresses = await CustomerAddressService.GetMineAsync();
         }
-        catch (Exception) { }
+        catch (Exception)
+        {
+            // Báo lỗi cho khách thay vì nuốt im lặng (tester A, 2026-10-22).
+            _addrError = "Không xóa được địa chỉ. Vui lòng thử lại.";
+        }
     }
 
     /// <summary>

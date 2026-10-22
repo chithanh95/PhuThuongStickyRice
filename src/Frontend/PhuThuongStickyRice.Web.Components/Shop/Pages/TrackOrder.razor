@@ -2407,7 +2407,10 @@
     {
         "ShipperPickup" => "🛵 Shipper đến lấy tại quán",
         "Pickup" => "🏪 Tự đến lấy tại quán",
-        _ => "🛵 Giao tận nơi"
+        // Mặc định KHÔNG được ghi "Giao tận nơi" (tester A, 2026-10-22):
+        // quán không giao hàng — đơn legacy có giá trị lạ/null hiện nhãn
+        // trung tính nhận tại quán.
+        _ => "🏪 Nhận tại quán"
     };
 
     private static RenderFragment OrderStatusBadge(string status) => builder =>

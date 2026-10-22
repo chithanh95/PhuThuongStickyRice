@@ -48,36 +48,10 @@ namespace PhuThuongStickyRice.Web.Components.Admin.Services
         }
 
         // ---- Corporate clients (item 122) ----
-
-        /// <summary>Admin: danh sách khách hàng doanh nghiệp.</summary>
-        public async Task<List<CorporateClientModel>> GetCorporateClientsAsync()
-        {
-            return await GetAsync<List<CorporateClientModel>>("api/corporate-clients");
-        }
-
-        /// <summary>Admin: tạo khách hàng doanh nghiệp mới.</summary>
-        /// <param name="model">Thông tin khách hàng doanh nghiệp.</param>
-        /// <returns>Khách hàng vừa tạo.</returns>
-        public async Task<CorporateClientModel> CreateCorporateClientAsync(CorporateClientModel model)
-        {
-            return await PostAsync<CorporateClientModel>("api/corporate-clients", model);
-        }
-
-        /// <summary>Admin: cập nhật khách hàng doanh nghiệp.</summary>
-        /// <param name="id">Id khách hàng.</param>
-        /// <param name="model">Thông tin mới.</param>
-        /// <returns>Khách hàng sau khi cập nhật.</returns>
-        public async Task<CorporateClientModel> UpdateCorporateClientAsync(Guid id, CorporateClientModel model)
-        {
-            return await PutAsync<CorporateClientModel>($"api/corporate-clients/{id}", model);
-        }
-
-        /// <summary>Admin: xóa khách hàng doanh nghiệp.</summary>
-        /// <param name="id">Id khách hàng cần xóa.</param>
-        public async Task DeleteCorporateClientAsync(Guid id)
-        {
-            await DeleteAsync($"api/corporate-clients/{id}");
-        }
+        // CRUD api/corporate-clients đã xóa (tester vòng 2, 2026-10-22):
+        // backend không có controller nào expose route này và không trang
+        // nào gọi — để lại chỉ là bề mặt 404 chờ sẵn. App service tương
+        // ứng ở tầng Application vẫn giữ cho nghiệp vụ nội bộ.
 
         /// <summary>Admin: khách hàng doanh nghiệp còn nợ (dashboard công nợ).</summary>
         public async Task<List<CorporateClientModel>> GetCorporateDueAsync()
@@ -163,38 +137,8 @@ namespace PhuThuongStickyRice.Web.Components.Admin.Services
         }
 
         // ---- Work shifts (item 125) ----
-
-        /// <summary>Admin: ca làm việc trong tuần chứa ngày cho trước.</summary>
-        /// <param name="date">Ngày bất kỳ trong tuần cần xem; null thì lấy tuần hiện tại.</param>
-        public async Task<List<WorkShiftModel>> GetWorkShiftsAsync(DateTime? date)
-        {
-            var dateString = (date ?? DateTime.Today).ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
-            return await GetAsync<List<WorkShiftModel>>($"api/work-shifts/week?date={dateString}");
-        }
-
-        /// <summary>Admin: tạo ca làm việc mới.</summary>
-        /// <param name="model">Thông tin ca làm việc.</param>
-        /// <returns>Ca làm việc vừa tạo.</returns>
-        public async Task<WorkShiftModel> CreateWorkShiftAsync(WorkShiftModel model)
-        {
-            return await PostAsync<WorkShiftModel>("api/work-shifts", model);
-        }
-
-        /// <summary>Admin: cập nhật ca làm việc.</summary>
-        /// <param name="id">Id ca làm việc.</param>
-        /// <param name="model">Thông tin mới.</param>
-        /// <returns>Ca làm việc sau khi cập nhật.</returns>
-        public async Task<WorkShiftModel> UpdateWorkShiftAsync(Guid id, WorkShiftModel model)
-        {
-            return await PutAsync<WorkShiftModel>($"api/work-shifts/{id}", model);
-        }
-
-        /// <summary>Admin: xóa ca làm việc.</summary>
-        /// <param name="id">Id ca làm việc cần xóa.</param>
-        public async Task DeleteWorkShiftAsync(Guid id)
-        {
-            await DeleteAsync($"api/work-shifts/{id}");
-        }
+        // Đã xóa (tester vòng 2, 2026-10-22): backend không có controller
+        // cho api/work-shifts và không trang nào gọi — bề mặt 404 chờ sẵn.
 
         // ---- Wallet (item 140) ----
 
@@ -236,40 +180,8 @@ namespace PhuThuongStickyRice.Web.Components.Admin.Services
         }
 
         // ---- Shift close (item 129) ----
-
-        /// <summary>Admin: tiền COD kỳ vọng phải thu trong ngày (tổng đơn COD chưa chốt ca).</summary>
-        /// <param name="date">Ngày cần đối chiếu.</param>
-        public async Task<decimal> GetExpectedCodAsync(DateTime date)
-        {
-            var dateString = date.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
-            var result = await GetAsync<Dictionary<string, decimal>>($"api/shift-closes/expected?date={dateString}");
-            return result != null && result.TryGetValue("expected", out var expectedCod) ? expectedCod : 0;
-        }
-
-        /// <summary>Admin: bản chốt ca của ngày (null nếu ca chưa chốt).</summary>
-        /// <param name="date">Ngày cần xem.</param>
-        public async Task<ShiftCloseModel> GetShiftCloseAsync(DateTime date)
-        {
-            var dateString = date.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
-            return await GetAsync<ShiftCloseModel>($"api/shift-closes/by-date?date={dateString}");
-        }
-
-        /// <summary>Admin: lịch sử các lần chốt ca.</summary>
-        public async Task<List<ShiftCloseModel>> GetShiftClosesAsync()
-        {
-            return await GetAsync<List<ShiftCloseModel>>("api/shift-closes");
-        }
-
-        /// <summary>Admin: chốt ca — đối chiếu tiền COD thực thu với kỳ vọng.</summary>
-        /// <param name="date">Ngày chốt ca.</param>
-        /// <param name="actualCod">Tiền COD thực tế thu được.</param>
-        /// <param name="note">Ghi chú chênh lệch (nếu có).</param>
-        /// <returns>Bản chốt ca vừa tạo.</returns>
-        public async Task<ShiftCloseModel> CloseShiftAsync(DateTime date, decimal actualCod, string note)
-        {
-            return await PostAsync<ShiftCloseModel>("api/shift-closes/close",
-                new { date, actualCod, note });
-        }
+        // Đã xóa (tester vòng 2, 2026-10-22): backend không có controller
+        // cho api/shift-closes và không trang nào gọi — bề mặt 404 chờ sẵn.
 
         // ---- Refunds (item 130) ----
 
@@ -296,40 +208,10 @@ namespace PhuThuongStickyRice.Web.Components.Admin.Services
         }
 
         // ---- Message templates (item 131) ----
-
-        /// <summary>Admin: danh sách mẫu tin nhắn, lọc theo kênh (Zalo/SMS...); rỗng thì lấy tất cả.</summary>
-        /// <param name="channel">Kênh gửi; null thì lấy mọi kênh.</param>
-        public async Task<List<MessageTemplateModel>> GetMessageTemplatesAsync(string channel = null)
-        {
-            var queryString = string.IsNullOrWhiteSpace(channel)
-                ? string.Empty
-                : $"?channel={Uri.EscapeDataString(channel)}";
-            return await GetAsync<List<MessageTemplateModel>>($"api/message-templates{queryString}");
-        }
-
-        /// <summary>Admin: tạo mẫu tin nhắn mới.</summary>
-        /// <param name="model">Nội dung mẫu tin nhắn.</param>
-        /// <returns>Mẫu tin nhắn vừa tạo.</returns>
-        public async Task<MessageTemplateModel> CreateMessageTemplateAsync(MessageTemplateModel model)
-        {
-            return await PostAsync<MessageTemplateModel>("api/message-templates", model);
-        }
-
-        /// <summary>Admin: cập nhật mẫu tin nhắn.</summary>
-        /// <param name="id">Id mẫu tin nhắn.</param>
-        /// <param name="model">Nội dung mới.</param>
-        /// <returns>Mẫu tin nhắn sau khi cập nhật.</returns>
-        public async Task<MessageTemplateModel> UpdateMessageTemplateAsync(Guid id, MessageTemplateModel model)
-        {
-            return await PutAsync<MessageTemplateModel>($"api/message-templates/{id}", model);
-        }
-
-        /// <summary>Admin: xóa mẫu tin nhắn.</summary>
-        /// <param name="id">Id mẫu tin nhắn cần xóa.</param>
-        public async Task DeleteMessageTemplateAsync(Guid id)
-        {
-            await DeleteAsync($"api/message-templates/{id}");
-        }
+        // Đã xóa (tester vòng 2, 2026-10-22): backend không có controller
+        // cho api/message-templates và không trang nào gọi — bề mặt 404
+        // chờ sẵn. Mẫu tin nhắn cho đơn đang chạy thật qua
+        // api/admin/order-message-templates (trang MauTinNhan).
 
         // ---- Voucher campaigns (item 132) ----
 

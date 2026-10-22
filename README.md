@@ -141,6 +141,16 @@ do admin upload). DataProtection keys lưu trong database nên nhiều instance 
 
 ## Nhật ký thay đổi
 
+- **2026-10-22** — Rà soát tester vòng 2 (toàn bộ luồng shop + đối chiếu endpoint): sửa route
+  backend `api/momo-reconciliation` và `api/voucher-campaigns` (trước lệch gạch nối với
+  frontend nên 404 — trang Đối soát MoMo chết hẳn); xóa 16 method frontend gọi endpoint
+  không tồn tại (corporate-clients, work-shifts, shift-closes, message-templates); nút "Đã
+  nhận tiền" không còn hiện trên đơn đã hủy; form "Xác nhận đã lấy hàng" hiện đúng cả với
+  đơn đặt trước cũ; Checkout có guard cứng chống bấm đúp đặt hàng ngay đầu handler; trang
+  Tài khoản: hạng thành viên lỗi thì báo không tải được thay vì kẹt "Đang tải...", lỗi tải
+  địa chỉ không còn báo sai "cần đăng nhập", đặt mặc định/xóa địa chỉ và đổi mật khẩu hết
+  nuốt lỗi/thiếu guard; nhãn hình thức nhận hàng mặc định ở tra cứu đơn đổi thành "Nhận
+  tại quán" (quán không giao hàng).
 - **2026-10-22** — Sửa điều hướng đăng nhập theo khu vực + rà soát tester toàn bộ web admin:
   helper mới `LoginRoutes` chọn trang đăng nhập theo route — khu vực nhân viên (`/admin`,
   `/dashboard`, `/orders`, `/products`, `/customers`) về `/login` (email + mật khẩu), khách về

@@ -23,7 +23,7 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
         /// </summary>
         [EnableRateLimiting(RateLimiterPolicyNames.DefaultPolicy)]
         [Produces("application/json")]
-        [Route("api/[controller]")]
+        [Route("api/momo-reconciliation")]
         [ApiController]
         [Authorize(Roles = "Admin")]
         public class MoMoReconciliationController : ControllerBase

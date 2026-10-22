@@ -340,7 +340,12 @@ else
                                             {
                                                 <div class="mt-1">📅 <strong>Đơn đặt trước</strong> — giờ lấy hẹn: <strong class="text-primary">@order.ScheduledFor.Value.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</strong></div>
                                             }
-                                            else if (order.Status != "Cancelled" && order.Status != "Completed")
+                                            @* Form xác nhận lấy hàng là khối riêng, không else-if với
+                                               ScheduledFor (tester vòng 2, 2026-10-22): đơn đặt
+                                               trước cũ vẫn phải xác nhận được khi shipper đến lấy.
+                                               Điều kiện khớp guard domain MarkPickedUp: chưa lấy
+                                               hàng, chưa hủy, chưa hoàn thành. *@
+                                            @if (!order.PickedUpAt.HasValue && order.Status != "Cancelled" && order.Status != "Completed")
                                             {
                                                 <div class="form-row align-items-end mt-2">
                                                     <div class="col-md-4">
@@ -1327,6 +1332,13 @@ else
     private RenderFragment ConfirmPaymentButton(OrderModel order) => builder =>
     {
         if (order.PaymentStatus != "PendingConfirmation")
+        {
+            return;
+        }
+
+        // Đơn đã hủy: domain ConfirmPayment chắc chắn ném lỗi — không hiện
+        // nút (tester vòng 2, 2026-10-22).
+        if (order.Status == "Cancelled")
         {
             return;
         }

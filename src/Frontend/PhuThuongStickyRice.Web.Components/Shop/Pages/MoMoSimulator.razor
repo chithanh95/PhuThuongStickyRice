@@ -112,6 +112,9 @@ else
 
     private async Task SubmitMoMoCallbackAsync(bool success)
     {
+        // Guard cứng chống bấm đúp ở đầu handler (tester A, 2026-10-22) —
+        // không chỉ dựa vào disabled của nút như trước.
+        if (_submitting) return;
         _error = null;
         _submitting = true;
         try
