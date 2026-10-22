@@ -2186,3 +2186,12 @@ html.dark .lx-admin .kanban-code { color: #f0eef5; }
 @media (max-width: 1199.98px) {
     .card.lexa-stat-card { margin-bottom: 16px; }
 }
+
+/* Logo tròn ở đầu sidebar admin (thay icon đồng hồ Lexa) */
+.lx-logo-img {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    object-fit: cover;
+    flex-shrink: 0;
+}

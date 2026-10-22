@@ -101,3 +101,12 @@
     }
 }
 /* ===== END UIUX run 02:32 - Agent1 FIX 1 ===== */
+
+/* Logo tròn cạnh tên quán ở footer */
+.sg-footer-logo-img {
+    width: 54px;
+    height: 54px;
+    border-radius: 50%;
+    vertical-align: middle;
+    margin-right: 10px;
+}

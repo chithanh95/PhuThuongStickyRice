@@ -141,6 +141,12 @@ do admin upload). DataProtection keys lưu trong database nên nhiều instance 
 
 ## Nhật ký thay đổi
 
+- **2026-10-22** — **Đưa hình logo vào các vị trí thương hiệu trên web** (trước đây chỉ
+  là chữ): header landing + header shop (desktop và mobile dùng chung một header), sidebar
+  admin (thay icon đồng hồ mẫu Lexa), trang đăng nhập nhân viên/khách và quên mật khẩu
+  (thay emoji 🍚), footer landing/shop và đầu hóa đơn in. File dùng chung:
+  `wwwroot/images/logo-round.png` (bản tròn nền trong suốt, hiển thị 30–88px tùy vị trí,
+  luôn kèm tên chữ "Xôi Huyền" bên cạnh để dễ đọc ở kích thước nhỏ).
 - **2026-10-22** — **Logo chính thức mới của Xôi Huyền** (phong cách khắc di sản: ụ xôi
   Hoàng Phố vàng nghệ phủ ruốc + hành phi khô trên 1 lá dong mềm, nền giấy kem, viền vàng
   kép, chữ serif viết hoa): đã gắn vào web — `images/logo.png` (ảnh chia sẻ og:image /

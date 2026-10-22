@@ -24,8 +24,11 @@
                 <button type="button" class="shp-back" @onclick="NavigateBack" title="Quay lại" aria-label="Quay lại trang trước">←</button>
             }
             <a class="shp-logo" href="/">
-                <span class="shp-logo-main">Xôi Huyền</span>
-                <span class="shp-logo-sub">Làng nghề Hà Nội</span>
+                <img class="shp-logo-img" src="/images/logo-round.png" alt="Logo Xôi Huyền" />
+                <span class="shp-logo-text">
+                    <span class="shp-logo-main">Xôi Huyền</span>
+                    <span class="shp-logo-sub">Làng nghề Hà Nội</span>
+                </span>
             </a>
 
             <button class="shp-hamburger" @onclick="() => _menuOpen = !_menuOpen" aria-label="Menu" aria-expanded="@_menuOpen" aria-controls="shp-nav-menu">
@@ -109,6 +112,7 @@
     <footer class="shp-footer" id="lien-he">
         <div class="shp-footer-inner">
             <div class="shp-footer-col">
+                <img class="shp-footer-logo-img" src="/images/logo-round.png" alt="Logo Xôi Huyền" />
                 <div class="shp-logo-main">Xôi Huyền</div>
                 <p>Xôi dẻo thơm chuẩn vị làng nghề Phú Thượng, Hà Nội.<br />Đồ mỗi sáng, nóng hổi.</p>
                 @if (!string.IsNullOrEmpty(_address))

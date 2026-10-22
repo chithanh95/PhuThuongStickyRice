@@ -76,3 +76,5 @@ html.dark .login-brand-name { color: #f0eef5; }
 /* btn-link trên trang login: xanh #0366d6 (app.css) -> tím Lexa */
 .login-card-box .btn-link { color: #7a6fbe; }
 .login-card-box .btn-link:hover { color: #625998; }
+
+.login-logo-img { height: 56px; width: 56px; border-radius: 50%; vertical-align: middle; }

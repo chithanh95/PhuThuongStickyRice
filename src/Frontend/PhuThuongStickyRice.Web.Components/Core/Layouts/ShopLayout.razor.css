@@ -47,6 +47,9 @@
     line-height: 1.15;
     margin-right: 8px;
     flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    gap: 9px;
     white-space: nowrap;
 }
 
@@ -664,3 +667,24 @@ html.dark .shp-back:hover {
 /* ===== UIUX run 04:32 (job uiux-team-2days) — Agent 3 (Đồng bộ Lexa)
    Chuyển style inline của nút "Chữ lớn" (A+) sang scoped CSS. */
 .shp-text-size-icon { font-weight: bold; font-size: 1.1em; }
+
+/* Logo tròn cạnh tên quán ở header shop + footer */
+.shp-logo-img {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+.shp-logo-text {
+    display: flex;
+    flex-direction: column;
+}
+
+.shp-footer-logo-img {
+    width: 54px;
+    height: 54px;
+    border-radius: 50%;
+    display: block;
+    margin-bottom: 10px;
+}
