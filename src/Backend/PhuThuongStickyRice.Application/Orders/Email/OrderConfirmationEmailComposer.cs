@@ -30,12 +30,12 @@ namespace PhuThuongStickyRice.Application.Orders.Email
         /// <returns>Cặp (tiêu đề, thân HTML) để pipeline email đưa vào hàng đợi gửi.</returns>
         public static (string Subject, string Body) Compose(Order order, BankTransferOptions bankTransfer)
         {
-            var subject = $"Xác nhận đơn hàng {order.OrderNumber} — Xôi Phú Thượng";
+            var subject = $"Xác nhận đơn hàng {order.OrderNumber} — Xôi Huyền";
 
             var orderedAt = VietnamTime.ToVietnamTime(order.CreatedAt);
             var body = new StringBuilder();
             body.Append("<html><body style=\"font-family: Arial, sans-serif; color: #222;\">");
-            body.Append("<h2>Xôi Phú Thượng — Xác nhận đơn hàng</h2>");
+            body.Append("<h2>Xôi Huyền — Xác nhận đơn hàng</h2>");
             body.Append($"<p>Cảm ơn <strong>{Escape(order.CustomerName)}</strong> đã đặt hàng!</p>");
             body.Append("<h3>Thông tin đơn hàng</h3>");
             AppendOrderInfoTable(body, order, orderedAt);
@@ -154,7 +154,7 @@ namespace PhuThuongStickyRice.Application.Orders.Email
         private static void AppendFooter(StringBuilder body)
         {
             body.Append("<hr/>");
-            body.Append("<p><small>Xôi Phú Thượng — Xôi làng nghề Phú Thượng, Hà Nội.<br/>"
+            body.Append("<p><small>Xôi Huyền — Xôi làng nghề Phú Thượng, Hà Nội.<br/>"
                 + "Đây là email tự động, vui lòng không trả lời email này.</small></p>");
         }
 

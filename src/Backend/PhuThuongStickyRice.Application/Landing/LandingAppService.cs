@@ -232,7 +232,7 @@ namespace PhuThuongStickyRice.Application.Landing
         {
             return new LandingContentDto
             {
-                HeroTitle = "XÔI PHÚ THƯỢNG",
+                HeroTitle = "XÔI HUYỀN",
                 HeroTagline = "hương vị làng nghề, dẻo thơm mỗi sáng",
                 HeroButtonText = "Đặt món ngay",
                 StoryTitle = "Câu chuyện làng nghề",
@@ -264,9 +264,9 @@ namespace PhuThuongStickyRice.Application.Landing
                     }
                 },
                 FooterTitle = "Ghé thăm quán",
-                ContactAddress = "Số 1, ngõ 1 Phú Thượng, Tây Hồ, Hà Nội",
-                ContactPhone = "0901 234 567",
-                ContactEmail = "xinchao@xoiphuthuong.vn",
+                ContactAddress = "Ngõ 277 Xuân Đỉnh, Từ Liêm, Hà Nội",
+                ContactPhone = "0389 245 468",
+                ContactEmail = "Maihuyen280579@gmail.com",
                 FooterButtonText = "Đặt món ngay"
             };
         }

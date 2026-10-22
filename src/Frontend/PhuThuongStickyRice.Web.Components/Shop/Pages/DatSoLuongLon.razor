@@ -2,7 +2,7 @@
    3-thông tin liên hệ) → gửi yêu cầu báo giá → hiện QR cọc 30% qua VietQR (in được qua
    window.print). Đơn số lượng lớn áp giá chiết khấu theo bậc (tier) tự động. *@
 @page "/dat-so-luong-lon"
-<PageTitle>Đặt số lượng lớn — Xôi Phú Thượng</PageTitle>
+<PageTitle>Đặt số lượng lớn — Xôi Huyền</PageTitle>
 @using System
 @using static PhuThuongStickyRice.Web.Components.Core.Helpers.PriceFormatter;
 @using System.Collections.Generic
@@ -25,7 +25,7 @@
 @* SL4: print-only quote (visible only when printing) *@
 <div class="bulk-print-only" aria-hidden="true">
     <h2>Báo giá đặt số lượng lớn</h2>
-    <p><strong>Xôi Phú Thượng</strong> — Ngày báo giá: @DateTime.Today.ToString("dd/MM/yyyy")</p>
+    <p><strong>Xôi Huyền</strong> — Ngày báo giá: @DateTime.Today.ToString("dd/MM/yyyy")</p>
     <table>
         <thead><tr><th scope="col">Món</th><th scope="col">Đơn giá</th><th scope="col">Số lượng</th><th scope="col">Thành tiền</th></tr></thead>
         <tbody>

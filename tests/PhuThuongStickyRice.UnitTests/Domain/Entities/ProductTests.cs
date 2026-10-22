@@ -9,7 +9,7 @@ namespace PhuThuongStickyRice.UnitTests.Domain.Entities
     {
         private static Product CreateValidProduct()
         {
-            return Product.Create(ProductCode.Of("XOI-001"), "Xoi Phu Thuong", Money.Of(25000, "VND"), "Xoi xeo");
+            return Product.Create(ProductCode.Of("XOI-001"), "Xoi Huyen", Money.Of(25000, "VND"), "Xoi xeo");
         }
 
         [Fact]
@@ -18,7 +18,7 @@ namespace PhuThuongStickyRice.UnitTests.Domain.Entities
             var product = CreateValidProduct();
 
             Assert.Equal("XOI-001", product.Code.Value);
-            Assert.Equal("Xoi Phu Thuong", product.Name);
+            Assert.Equal("Xoi Huyen", product.Name);
             Assert.Equal("Xoi xeo", product.Description);
             Assert.Equal(25000, product.Price.Amount);
             Assert.Equal("VND", product.Price.Currency);

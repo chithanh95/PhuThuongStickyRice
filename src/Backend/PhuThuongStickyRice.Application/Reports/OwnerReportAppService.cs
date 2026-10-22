@@ -96,7 +96,7 @@ namespace PhuThuongStickyRice.Application.Reports
             {
                 From = ReportSenderAddress,
                 Tos = recipientEmail,
-                Subject = $"[Xôi Phú Thượng] Báo cáo {periodLabel}",
+                Subject = $"[Xôi Huyền] Báo cáo {periodLabel}",
                 Body = body
             });
             await _emailMessages.UnitOfWork.SaveChangesAsync();
@@ -143,7 +143,7 @@ namespace PhuThuongStickyRice.Application.Reports
             System.Collections.Generic.List<Orders.DTOs.TopProductDto> topProducts)
         {
             var sb = new StringBuilder();
-            sb.AppendLine(VietnameseCulture.Value, $"BÁO CÁO DOANH THU {periodLabel.ToUpperInvariant()} — XÔI PHÚ THƯỢNG");
+            sb.AppendLine(VietnameseCulture.Value, $"BÁO CÁO DOANH THU {periodLabel.ToUpperInvariant()} — XÔI HUYỀN");
             sb.AppendLine(new string('=', SeparatorLength));
             sb.AppendLine(VietnameseCulture.Value, $"Tổng đơn hàng: {stats.TotalOrders}");
             sb.AppendLine(VietnameseCulture.Value, $"Doanh thu: {stats.TotalRevenue:N0} ₫ (không tính đơn đã hủy)");
@@ -168,7 +168,7 @@ namespace PhuThuongStickyRice.Application.Reports
             }
 
             sb.AppendLine();
-            sb.AppendLine("-- Báo cáo tự động từ hệ thống Xôi Phú Thượng --");
+            sb.AppendLine("-- Báo cáo tự động từ hệ thống Xôi Huyền --");
             return sb.ToString();
         }
     }

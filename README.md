@@ -1,4 +1,4 @@
-# Xôi Phú Thượng — Web đặt hàng & quản lý quán
+# Xôi Huyền — Web đặt hàng & quản lý quán
 
 Web bán hàng các món xôi làng nghề Phú Thượng (Hà Nội) + hệ thống admin quản lý toàn diện:
 khách xem menu, bỏ giỏ, đặt hàng online (khách tự đến lấy hoặc tự book shipper đến lấy — quán không giao hàng);
@@ -141,6 +141,15 @@ do admin upload). DataProtection keys lưu trong database nên nhiều instance 
 
 ## Nhật ký thay đổi
 
+- **2026-10-22** — **Đổi tên thương hiệu "Xôi Phú Thượng" → "Xôi Huyền"** (logo mới do
+  chủ quán chọn, bỏ dòng PHÚ THƯỢNG): mọi chuỗi hiển thị trong code (tiêu đề trang,
+  header/footer, email xác nhận, thông báo, hóa đơn in, manifest PWA) dùng tên mới.
+  Địa chỉ quán sửa thành **Ngõ 277 Xuân Đỉnh, Từ Liêm, Hà Nội**; hotline **0389 245 468**;
+  email liên hệ **Maihuyen280579@gmail.com**. Manifest bỏ câu "giao tận nơi" (quán không
+  giao hàng). Giữ nguyên có chủ đích: tên chủ tài khoản ngân hàng (tên pháp lý trên tài
+  khoản), các migration lịch sử, domain/email hệ thống, và các nhắc tới làng nghề Phú
+  Thượng (địa danh/nghề truyền thống — không phải tên thương hiệu). Nội dung landing và
+  mẫu tin nhắn lưu trong database cần sửa tương ứng ở trang admin.
 - **2026-10-22** — Rà soát tester vòng 2 (toàn bộ luồng shop + đối chiếu endpoint): sửa route
   backend `api/momo-reconciliation` và `api/voucher-campaigns` (trước lệch gạch nối với
   frontend nên 404 — trang Đối soát MoMo chết hẳn); xóa 16 method frontend gọi endpoint

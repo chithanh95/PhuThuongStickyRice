@@ -14,7 +14,7 @@ namespace PhuThuongStickyRice.Web.Components.Landing.Models
 
     public class LandingContentModel
     {
-        public string HeroTitle { get; set; } = "XÔI PHÚ THƯỢNG";
+        public string HeroTitle { get; set; } = "XÔI HUYỀN";
 
         public string HeroTagline { get; set; } = "hương vị làng nghề, dẻo thơm mỗi sáng";
 

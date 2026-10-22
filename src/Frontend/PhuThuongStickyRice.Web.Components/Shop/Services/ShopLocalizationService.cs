@@ -118,7 +118,7 @@ namespace PhuThuongStickyRice.Web.Components.Shop.Services
                 ["vi"] = new Dictionary<string, string>
                 {
                     ["shop_title"] = "Đặt xôi",
-                    ["shop_subtitle"] = "Xôi Phú Thượng — dẻo thơm mỗi sáng",
+                    ["shop_subtitle"] = "Xôi Huyền — dẻo thơm mỗi sáng",
                     ["add_to_cart"] = "Thêm vào giỏ",
                     ["cart"] = "Giỏ hàng",
                     ["cart_empty"] = "Giỏ hàng đang trống.",

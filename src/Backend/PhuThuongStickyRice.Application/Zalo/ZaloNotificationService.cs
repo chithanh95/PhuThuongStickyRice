@@ -80,7 +80,7 @@ namespace PhuThuongStickyRice.Application.Zalo
         public Task SendOrderReceiptAsync(string orderNumber, string customerPhone, decimal totalAmount)
         {
             var message =
-                $"Xôi Phú Thượng: đơn hàng {orderNumber} ({totalAmount:N0} ₫) đã được ghi nhận. " +
+                $"Xôi Huyền: đơn hàng {orderNumber} ({totalAmount:N0} ₫) đã được ghi nhận. " +
                 "Cảm ơn quý khách!";
             return SendTextMessageAsync(customerPhone, message);
         }

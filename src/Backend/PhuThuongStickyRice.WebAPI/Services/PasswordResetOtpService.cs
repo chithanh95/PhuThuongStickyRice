@@ -95,7 +95,7 @@ namespace PhuThuongStickyRice.WebAPI.Services
 
             await _smsSender.SendAsync(
                 phone,
-                $"Mã OTP đặt lại mật khẩu Xôi Phú Thượng: {otp} (hiệu lực 5 phút).",
+                $"Mã OTP đặt lại mật khẩu Xôi Huyền: {otp} (hiệu lực 5 phút).",
                 cancellationToken);
         }
 

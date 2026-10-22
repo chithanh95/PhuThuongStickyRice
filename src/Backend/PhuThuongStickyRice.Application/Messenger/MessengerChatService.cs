@@ -74,7 +74,7 @@ namespace PhuThuongStickyRice.Application.Messenger
     }
 
     /// <summary>
-    /// Chatbot Messenger dạng rule-based cho Xôi Phú Thượng (item 53).
+    /// Chatbot Messenger dạng rule-based cho Xôi Huyền (item 53).
     ///
     /// Kịch bản hội thoại:
     ///   chào / "menu"     → gửi thực đơn (text) + hướng dẫn đặt hàng
@@ -523,7 +523,7 @@ namespace PhuThuongStickyRice.Application.Messenger
             var items = await LoadActiveProductsAsync(
                 MenuMaxItems, "Could not load product menu for Messenger.");
 
-            var sb = new StringBuilder("🍚 THỰC ĐƠN XÔI PHÚ THƯỢNG\n");
+            var sb = new StringBuilder("🍚 THỰC ĐƠN XÔI HUYỀN\n");
             if (items.Count == 0)
             {
                 sb.Append("(Quán đang cập nhật thực đơn, bạn gọi hotline giúp mình nhé!)");

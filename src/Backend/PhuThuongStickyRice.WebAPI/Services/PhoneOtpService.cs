@@ -130,7 +130,7 @@ namespace PhuThuongStickyRice.WebAPI.Services
 
             await _smsSender.SendAsync(
                 phone,
-                $"Mã OTP {label} Xôi Phú Thượng: {otp} (hiệu lực 5 phút). Không chia sẻ mã này cho bất kỳ ai.",
+                $"Mã OTP {label} Xôi Huyền: {otp} (hiệu lực 5 phút). Không chia sẻ mã này cho bất kỳ ai.",
                 cancellationToken);
 
             return PhoneOtpResult.Ok();

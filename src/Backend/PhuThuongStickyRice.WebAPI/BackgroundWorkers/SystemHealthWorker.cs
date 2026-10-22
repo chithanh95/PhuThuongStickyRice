@@ -81,7 +81,7 @@ namespace PhuThuongStickyRice.WebAPI.BackgroundWorkers
             if (!dbOk)
             {
                 _lastDbAlert = await AlertAsync(provider, settings, "db", _lastDbAlert,
-                    "🚨 *Xôi Phú Thượng — health alert*\nKhông kết nối được database.");
+                    "🚨 *Xôi Huyền — health alert*\nKhông kết nối được database.");
             }
 
             // 2. Uploads disk space.
@@ -89,7 +89,7 @@ namespace PhuThuongStickyRice.WebAPI.BackgroundWorkers
             if (freeBytes.HasValue && freeBytes.Value < LowDiskBytes)
             {
                 _lastDiskAlert = await AlertAsync(provider, settings, "disk", _lastDiskAlert,
-                    $"🚨 *Xôi Phú Thượng — health alert*\nỔ đĩa uploads sắp đầy: còn {freeBytes.Value / BytesPerMegabyte} MB trống.");
+                    $"🚨 *Xôi Huyền — health alert*\nỔ đĩa uploads sắp đầy: còn {freeBytes.Value / BytesPerMegabyte} MB trống.");
             }
 
             // 3. Recent error-log rate.
@@ -97,7 +97,7 @@ namespace PhuThuongStickyRice.WebAPI.BackgroundWorkers
             if (recentErrors > settings.ErrorRateThreshold)
             {
                 _lastErrorRateAlert = await AlertAsync(provider, settings, "errors", _lastErrorRateAlert,
-                    $"🚨 *Xôi Phú Thượng — health alert*\n{recentErrors} lỗi trong 1 giờ qua (ngưỡng {settings.ErrorRateThreshold}). Xem /admin/nhat-ky-he-thong.");
+                    $"🚨 *Xôi Huyền — health alert*\n{recentErrors} lỗi trong 1 giờ qua (ngưỡng {settings.ErrorRateThreshold}). Xem /admin/nhat-ky-he-thong.");
             }
 
             if (dbOk && recentErrors <= settings.ErrorRateThreshold)
@@ -247,7 +247,7 @@ namespace PhuThuongStickyRice.WebAPI.BackgroundWorkers
                 {
                     From = "noreply@xoiphuthuong.vn",
                     Tos = settings.OwnerReportEmail,
-                    Subject = "[Xôi Phú Thượng] Cảnh báo hệ thống",
+                    Subject = "[Xôi Huyền] Cảnh báo hệ thống",
                     Body = message.Replace("*", string.Empty)
                 });
                 await queue.UnitOfWork.SaveChangesAsync();

@@ -149,7 +149,7 @@ namespace PhuThuongStickyRice.Application.Reports
         public string BuildMessageText(WeeklyReportDto report)
         {
             var sb = new StringBuilder();
-            sb.AppendLine("📊 BÁO CÁO TUẦN — XÔI PHÚ THƯỢNG");
+            sb.AppendLine("📊 BÁO CÁO TUẦN — XÔI HUYỀN");
             sb.AppendLine(report.WeekLabel);
             sb.AppendLine();
             sb.Append("💰 Doanh thu: ").Append(FormatVnd(report.TotalRevenue));

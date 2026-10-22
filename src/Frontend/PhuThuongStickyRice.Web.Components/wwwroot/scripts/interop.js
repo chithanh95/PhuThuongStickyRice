@@ -766,7 +766,7 @@ window.ptShareDish = function (name, priceText, url) {
         if (navigator.share) {
             navigator.share({
                 title: name,
-                text: name + ' - ' + priceText + ' | Xôi Phú Thượng',
+                text: name + ' - ' + priceText + ' | Xôi Huyền',
                 url: url
             }).catch(function () { /* khách đóng bảng chia sẻ: bỏ qua */ });
             return true;

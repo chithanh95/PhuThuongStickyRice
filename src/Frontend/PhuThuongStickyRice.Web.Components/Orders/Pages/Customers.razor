@@ -14,7 +14,7 @@
 <div class="lx-page-head">
     <h4 class="lx-page-title">Khách hàng</h4>
     <ol class="lx-breadcrumb">
-        <li><a href="/dashboard">Xôi Phú Thượng</a></li>
+        <li><a href="/dashboard">Xôi Huyền</a></li>
         <li class="current">Khách hàng</li>
     </ol>
 </div>
@@ -675,7 +675,7 @@ else
 
         _remindPhone = phone;
         _expandedPhone = null;
-        _remindMessage = $"Chào {name}, đã lâu quán Xôi Phú Thượng chưa thấy bạn ghé. Quán nhớ bạn lắm, hôm nào ghé ăn xôi nhé! 🍚";
+        _remindMessage = $"Chào {name}, đã lâu quán Xôi Huyền chưa thấy bạn ghé. Quán nhớ bạn lắm, hôm nào ghé ăn xôi nhé! 🍚";
         try
         {
             _remindHistory[phone] = await CareService.GetRemindersAsync(phone);

@@ -1,4 +1,4 @@
-/* Xoi Phu Thuong PWA service worker: caches the app shell on
+/* Xoi Huyen PWA service worker: caches the app shell on
  * install and serves the offline.html fallback for navigations
  * when the network is unavailable.
  *

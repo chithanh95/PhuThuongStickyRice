@@ -164,7 +164,7 @@ namespace PhuThuongStickyRice.Application.Orders.Payments
         {
             var requestId = order.Id.ToString("N");
             var amount = (long)order.TotalAmount.Amount;
-            var orderInfo = $"Thanh toan don hang {order.OrderNumber} - Xoi Phu Thuong";
+            var orderInfo = $"Thanh toan don hang {order.OrderNumber} - Xoi Huyen";
             var redirectUrl = $"{options.StorefrontBaseUrl.TrimEnd('/')}{TrackOrderPath}?orderNumber={Uri.EscapeDataString(order.OrderNumber)}";
             var ipnUrl = $"{options.ApiBaseUrl.TrimEnd('/')}{MoMoCallbackPath}";
 

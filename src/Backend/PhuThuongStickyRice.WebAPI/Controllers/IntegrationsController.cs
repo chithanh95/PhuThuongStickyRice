@@ -68,7 +68,7 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             CancellationToken cancellationToken = default)
         {
             var message = string.IsNullOrWhiteSpace(model?.Message)
-                ? "Xôi Phú Thượng: đây là tin nhắn kiểm tra tích hợp Zalo OA."
+                ? "Xôi Huyền: đây là tin nhắn kiểm tra tích hợp Zalo OA."
                 : model.Message;
             await _zalo.SendTextMessageAsync(model?.Phone ?? "0900000000", message);
             return Ok(new { sent = _zaloOptions.IsConfigured, stubbed = !_zaloOptions.IsConfigured });

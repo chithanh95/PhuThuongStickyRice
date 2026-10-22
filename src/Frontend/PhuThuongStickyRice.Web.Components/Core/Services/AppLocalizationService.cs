@@ -162,7 +162,7 @@ namespace PhuThuongStickyRice.Web.Components.Core.Services
                     ["footer.explore"] = "Khám phá",
                     ["footer.contact_us"] = "Liên hệ",
                     ["footer.faq"] = "Câu hỏi thường gặp",
-                    ["footer.copyright"] = "© 2026 Xôi Phú Thượng — Thổi hồn vào từng gói xôi",
+                    ["footer.copyright"] = "© 2026 Xôi Huyền — Thổi hồn vào từng gói xôi",
                     // Shop
                     ["shop.add_to_cart"] = "Thêm vào giỏ",
                     ["shop.sold_out"] = "Tạm hết",

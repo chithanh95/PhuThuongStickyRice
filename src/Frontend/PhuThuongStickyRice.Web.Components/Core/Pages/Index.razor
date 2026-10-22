@@ -1,5 +1,5 @@
 @page "/"
-<PageTitle>Xôi Phú Thượng — Xôi ngon Hà Nội, đặt xôi online</PageTitle>
+<PageTitle>Xôi Huyền — Xôi ngon Hà Nội, đặt xôi online</PageTitle>
 @layout PhuThuongStickyRice.Web.Components.Core.Layouts.EmptyLayout
 @using System
 @using System.Collections.Generic
@@ -102,7 +102,7 @@ else
 <header class="sg-header">
     <div class="sg-header-inner">
         <a class="sg-logo" href="/">
-            <span class="sg-logo-main">Xôi Phú Thượng</span>
+            <span class="sg-logo-main">Xôi Huyền</span>
             <span class="sg-logo-sub">Vietnamese Cuisine</span>
         </a>
         <input type="checkbox" id="sg-nav-toggle" class="sg-nav-checkbox" />
@@ -211,7 +211,7 @@ else
                 <a href="/shop" class="sg-btn sg-btn-outline">Đặt xôi ngay →</a>
             </div>
             <div class="sg-intro-img sg-reveal">
-                <img loading="lazy" src="@ImageUrlOrFallback(_content.HeroImageUrl, PlaceholderImage)" alt="Xôi Phú Thượng" />
+                <img loading="lazy" src="@ImageUrlOrFallback(_content.HeroImageUrl, PlaceholderImage)" alt="Xôi Huyền" />
                 <div class="sg-intro-badge">
                     <strong>100+ năm</strong>
                     <span>Làng nghề Phú Thượng</span>
@@ -226,7 +226,7 @@ else
     <div class="sg-container">
         <div class="sg-sec-head">
             <p class="sg-eyebrow">Trải nghiệm</p>
-            <h2 class="sg-h2">Vì sao chọn Xôi Phú Thượng</h2>
+            <h2 class="sg-h2">Vì sao chọn Xôi Huyền</h2>
         </div>
         <div class="sg-why-grid">
             <div class="sg-why-card">
@@ -291,7 +291,7 @@ else
                 <div class="sg-tl-dot"></div>
                 <div class="sg-tl-card">
                     <strong>1980 – 2000</strong>
-                    <p>Xôi Phú Thượng thành thương hiệu, có mặt trong mâm cỗ cưới hỏi khắp Thủ đô.</p>
+                    <p>Xôi Huyền thành thương hiệu, có mặt trong mâm cỗ cưới hỏi khắp Thủ đô.</p>
                 </div>
             </div>
             <div class="sg-tl-item sg-reveal">
@@ -732,7 +732,7 @@ else
     <div class="sg-container">
         <div class="sg-footer-grid">
             <div class="sg-footer-col">
-                <h3 class="sg-footer-brand">Xôi Phú Thượng</h3>
+                <h3 class="sg-footer-brand">Xôi Huyền</h3>
                 <p class="sg-footer-about">@(string.IsNullOrWhiteSpace(_content.FooterAboutText) ? "Gói xôi nóng hổi mỗi sáng từ làng nghề Phú Thượng — dẻo thơm, đúng vị Hà Nội." : _content.FooterAboutText)</p>
                 @if (!string.IsNullOrWhiteSpace(_content.ContactAddress))
                 {
@@ -771,7 +771,7 @@ else
                 }
             </div>
         }
-        <div class="sg-bottom-bar">@(string.IsNullOrWhiteSpace(_content.FooterCopyrightText) ? "© 2026 Xôi Phú Thượng — Thổi hồn vào từng gói xôi" : _content.FooterCopyrightText)</div>
+        <div class="sg-bottom-bar">@(string.IsNullOrWhiteSpace(_content.FooterCopyrightText) ? "© 2026 Xôi Huyền — Thổi hồn vào từng gói xôi" : _content.FooterCopyrightText)</div>
     </div>
 </footer>
 
@@ -1125,7 +1125,7 @@ else
     }
 
     private string HeroTitleText =>
-        string.IsNullOrWhiteSpace(_content.HeroTitle) ? "Xôi Phú Thượng" : _content.HeroTitle;
+        string.IsNullOrWhiteSpace(_content.HeroTitle) ? "Xôi Huyền" : _content.HeroTitle;
 
     private string HeroTaglineText =>
         string.IsNullOrWhiteSpace(_content.HeroTagline)
@@ -1133,7 +1133,7 @@ else
             : _content.HeroTagline;
 
     private string StoryTitleText =>
-        string.IsNullOrWhiteSpace(_content.StoryTitle) ? "Câu chuyện Xôi Phú Thượng" : _content.StoryTitle;
+        string.IsNullOrWhiteSpace(_content.StoryTitle) ? "Câu chuyện Xôi Huyền" : _content.StoryTitle;
 
     private string StoryBodyText =>
         string.IsNullOrWhiteSpace(_content.StoryBody)

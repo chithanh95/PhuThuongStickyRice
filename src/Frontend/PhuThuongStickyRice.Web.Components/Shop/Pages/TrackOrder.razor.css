@@ -937,7 +937,7 @@ html.dark .shop-dropzone:focus-within {
      thông tin thưởng điểm, khách cần thấy rõ)
    - "📞 Đơn đã được shop xác nhận..." (:510, .alert.alert-info > small —
      hướng dẫn khi đơn đã xác nhận, chỉ còn cách gọi hotline)
-   - "Đánh giá của bạn giúp Xôi Phú Thượng phục vụ tốt hơn."
+   - "Đánh giá của bạn giúp Xôi Huyền phục vụ tốt hơn."
      (:756, p.text-muted.small trong popup khảo sát)
    (Verify: p.small chỉ khớp 2 chỗ trên; .card-header small chỉ 2 chỗ trên;
    .alert.alert-info > small chỉ khớp :510.) */
