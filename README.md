@@ -141,6 +141,11 @@ do admin upload). DataProtection keys lưu trong database nên nhiều instance 
 
 ## Nhật ký thay đổi
 
+### 2026-10-22 — Sửa hero shop tràn ngang mobile + lịch sử đơn hiện đúng lỗi server
+- **Hero shop mobile**: badge trạng thái trong hero (vd "Quán đang nghỉ — vẫn nhận đặt hàng, mở lại lúc 06:00...") bị Bootstrap ép `white-space: nowrap` → tràn khỏi hero, đẩy cả khối chữ rộng hơn màn hình (dòng mô tả bị cắt mép phải). Nay badge được xuống dòng bình thường + cột chữ hero co được (`min-width: 0`).
+- **Tra cứu lịch sử đơn theo SĐT**: khi server trả lỗi, frontend trước đây chỉ đọc thông điệp thật ở nhánh có OTP; nhánh thường ném nguyên chuỗi lỗi thô `net_http_message_not_success_statuscode_reason, 400, Bad Request` lên mặt khách. Nay `GetOrdersByPhoneAsync` đọc `message` của server cho mọi lỗi — khách thấy lý do thật bằng tiếng Việt.
+- **Địa chỉ landing**: nội dung landing đọc từ DB (bảng `LandingPageContent`, seed 2026-10-14 còn địa chỉ/SĐT/email mẫu cũ) — cập nhật qua admin `/admin/landing` hoặc script SQL `CapNhat-ThongTin-Landing.sql` (Ngõ 277 Xuân Đỉnh · 0389 245 468 · Maihuyen280579@gmail.com).
+
 ### 2026-10-22 — Header mobile 1 dòng + sửa font tên quán + bỏ mục Gợi ý & Combo gia đình ở shop
 - **Font tên quán (PC)**: CSS khai font 'Lora' cho chữ thương hiệu nhưng app.css chưa từng tải Lora → trình duyệt lùi về Georgia, lỗi dấu chồng tiếng Việt ("Huyề n"). Nay @import tải thêm Lora (có subset tiếng Việt) cùng Cormorant Garamond — "Xôi Huyền" hiển thị đúng dấu ở header shop + landing + footer.
 - **Header mobile (shop + landing)**: chỉ còn logo hình tròn, ẩn chữ thương hiệu; header shop về **1 dòng duy nhất** (bỏ kiểu 2 hàng ở ≤480px) — ẩn nút "Đặt ngay", ẩn số hotline (giữ icon 📞 bấm gọi), ẩn khối tài khoản (đăng nhập/tài khoản vẫn có trong menu hamburger); landing ẩn chữ thương hiệu ở ≤768px và header không xuống dòng.

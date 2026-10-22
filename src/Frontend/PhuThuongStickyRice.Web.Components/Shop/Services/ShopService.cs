@@ -379,14 +379,20 @@ namespace PhuThuongStickyRice.Web.Components.Shop.Services
 
             // Dispose response để trả kết nối HTTP về pool (CA2000).
             using var response = await _httpClient.GetAsync(url);
-            if (!response.IsSuccessStatusCode && !string.IsNullOrWhiteSpace(otpCode))
+            if (!response.IsSuccessStatusCode)
             {
+                // Đọc THÔNG ĐIỆP THẬT của server cho MỌI lỗi. Trước đây chỉ
+                // nhánh có OTP mới đọc body; nhánh thường rơi xuống
+                // EnsureSuccessStatusCode -> ném chuỗi lỗi thô
+                // "net_http_message_not_success_statuscode_reason, 400..."
+                // lên mặt khách (user báo 2026-10-22) và nuốt mất lý do thật.
                 var body = await response.Content.ReadAsStringAsync();
                 throw new InvalidOperationException(
-                    ParseServerMessage(body) ?? "Mã OTP không đúng hoặc đã hết hạn. Vui lòng yêu cầu mã mới.");
+                    ParseServerMessage(body)
+                    ?? (!string.IsNullOrWhiteSpace(otpCode)
+                        ? "Mã OTP không đúng hoặc đã hết hạn. Vui lòng yêu cầu mã mới."
+                        : "Không tải được lịch sử đơn hàng. Vui lòng thử lại sau."));
             }
-
-            response.EnsureSuccessStatusCode();
             return await response.Content.ReadAs<List<TrackedOrderModel>>();
         }
 

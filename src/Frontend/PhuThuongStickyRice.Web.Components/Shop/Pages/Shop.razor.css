@@ -1076,3 +1076,18 @@ html.dark .shop-sticky-cart-cta {
         padding-top: 10px;
     }
 }
+
+/* 2026-10-22: badge trang thai trong hero (vd "Quan dang nghi — van nhan
+   dat hang, mo lai luc 06:00...") la chu dai; .badge cua Bootstrap mac dinh
+   white-space:nowrap -> tran khoi hero tren mobile va day khoi chu hero
+   rong hon man hinh (dong mo ta bi cat o mep phai). Cho badge xuong dong
+   nhu chu thuong + cot chu duoc phep co lai (min-width:0). */
+.jumbotron .badge {
+    white-space: normal;
+    text-align: left;
+    line-height: 1.4;
+}
+
+.jumbotron .d-flex > div {
+    min-width: 0;
+}
