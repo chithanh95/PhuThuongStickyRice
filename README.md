@@ -141,6 +141,13 @@ do admin upload). DataProtection keys lưu trong database nên nhiều instance 
 
 ## Nhật ký thay đổi
 
+- **2026-10-22** — **Logo chính thức mới của Xôi Huyền** (phong cách khắc di sản: ụ xôi
+  Hoàng Phố vàng nghệ phủ ruốc + hành phi khô trên 1 lá dong mềm, nền giấy kem, viền vàng
+  kép, chữ serif viết hoa): đã gắn vào web — `images/logo.png` (ảnh chia sẻ og:image /
+  twitter:image + ảnh hiển thị ở trang chi tiết sản phẩm), icon PWA `icons/icon-192.png`
+  và `icons/icon-512.png`, apple-touch-icon và `favicon.ico` đều dùng logo mới. Hai file
+  logo chuẩn (bản vuông + bản tròn nền trong suốt) lưu ở thư mục logo của dự án. Nhân tiện
+  bỏ nhắc MoMo trong twitter:description (MoMo đang tắt theo cờ `momo-payments`).
 - **2026-10-22** — **Đổi tên thương hiệu "Xôi Phú Thượng" → "Xôi Huyền"** (logo mới do
   chủ quán chọn, bỏ dòng PHÚ THƯỢNG): mọi chuỗi hiển thị trong code (tiêu đề trang,
   header/footer, email xác nhận, thông báo, hóa đơn in, manifest PWA) dùng tên mới.
