@@ -141,6 +141,15 @@ do admin upload). DataProtection keys lưu trong database nên nhiều instance 
 
 ## Nhật ký thay đổi
 
+- **2026-10-22** — Sửa điều hướng đăng nhập theo khu vực + rà soát tester toàn bộ web admin:
+  helper mới `LoginRoutes` chọn trang đăng nhập theo route — khu vực nhân viên (`/admin`,
+  `/dashboard`, `/orders`, `/products`, `/customers`) về `/login` (email + mật khẩu), khách về
+  `/dang-nhap` (số điện thoại); áp dụng ở cả 3 điểm điều hướng (`RedirectToLogin`, handler 401,
+  `ApiClientBase`). Trước đây mọi trang đều về trang đăng nhập khách nên tài khoản admin không
+  đăng nhập lại được khi mở thẳng link quản trị hoặc hết hạn token. Kèm các sửa từ đợt rà soát:
+  Lãi gộp nạp dữ liệu tuần tự (2 loader dùng chung `OrderService`, hết race token) và báo lỗi khi
+  tải giá vốn; Chi nhánh/Khuyến mãi/Nhật ký hiện message lỗi thật khi tải danh sách thay vì nuốt
+  im lặng; nút "Hôm qua" ở Báo cáo giờ bấm là nạp luôn số liệu.
 - **2026-10-21** — Ba sửa theo phản hồi vận hành: (1) Kanban đơn hàng bỏ nút lùi trạng thái
   (domain chỉ cho đi tiến từng bước — nút lùi bấm luôn bị server từ chối); `GlobalExceptionFilter`
   nay map `DomainException` thành HTTP 400 kèm message thật thay vì 500, thông điệp chặn chuyển

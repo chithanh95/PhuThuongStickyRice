@@ -13,6 +13,11 @@
     </ol>
 </div>
 
+@if (!string.IsNullOrEmpty(_error))
+{
+    <div class="alert alert-danger" role="alert">@_error</div>
+}
+
 <div class="row">
     <div class="col-12">
         <div class="card">
@@ -118,6 +123,7 @@ else if (_logs != null)
     private List<StaffUserModel> _staffUsers = new();
     private List<KeyValuePair<string, string>> _actions = new();
     private bool _loading;
+    private string _error;
 
     private string _filterUserId = "";
     private string _filterAction = "";
@@ -170,6 +176,7 @@ else if (_logs != null)
     private async Task LoadPage()
     {
         _loading = true;
+        _error = null;
         try
         {
             Guid? userId = Guid.TryParse(_filterUserId, out var id) ? id : (Guid?)null;
@@ -186,9 +193,12 @@ else if (_logs != null)
                 .Select(a => new KeyValuePair<string, string>(a, ActionLabel(a)))
                 .ToList();
         }
-        catch
+        catch (Exception ex)
         {
+            // Hiện lỗi thật thay vì nuốt im lặng (tester 2026-10-22):
+            // danh sách trống kèm lý do, tránh tưởng chưa có nhật ký.
             _logs = new StaffActivityLogListModel();
+            _error = $"Không tải được nhật ký: {ex.Message}";
         }
         finally
         {

@@ -247,10 +247,12 @@ else if (_report != null)
 
     protected override async Task OnInitializedAsync()
     {
-        // perf-hunt 2026-10-19 (run 22:55): 2 loader độc lập (giá vốn để sửa +
-        // báo cáo lãi gộp) chạy song song, cắt 1 round-trip khi mở trang.
-        // Mỗi loader giữ try/catch fail-soft riêng, ghi field khác nhau.
-        await Task.WhenAll(LoadCostsAsync(), LoadAsync());
+        // Nạp TUẦN TỰ (tester 2026-10-22): cả 2 loader dùng chung một
+        // OrderService (typed HttpClient + token store) — chạy song song
+        // bằng Task.WhenAll sẽ race khi token vừa hết hạn, cùng họ lỗi đã
+        // sửa ở Quotes.razor. Đổi lại 1 round-trip để mở trang ổn định.
+        await LoadAsync();
+        await LoadCostsAsync();
     }
 
     private void SetPreset(int days)
@@ -287,6 +289,14 @@ else if (_report != null)
         catch (Exception)
         {
             _costs = new List<ProductCostModel>();
+
+            // Không nuốt lỗi im lặng (tester 2026-10-22): bảng giá vốn trống
+            // phải kèm lý do, kẻo tưởng chưa có sản phẩm. LoadAsync chạy
+            // trước nên chỉ ghi khi nó chưa báo lỗi khác.
+            if (_error == null)
+            {
+                _error = "Không tải được danh sách giá vốn. Vui lòng thử lại.";
+            }
         }
     }
 

@@ -194,7 +194,13 @@
         {
             _promotions = await AdminOperationsService.GetPromotionsAsync() ?? new();
         }
-        catch { _promotions = new(); }
+        catch (Exception ex)
+        {
+            // Hiện lỗi thật thay vì nuốt im lặng (tester 2026-10-22):
+            // danh sách trống kèm lý do, tránh tưởng chưa có khuyến mãi.
+            _promotions = new();
+            _error = $"Không tải được danh sách khuyến mãi: {ex.Message}";
+        }
         _loading = false;
     }
 

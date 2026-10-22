@@ -170,7 +170,13 @@
         {
             _branches = await AdminSystemService.GetBranchesAsync() ?? new();
         }
-        catch { _branches = new(); }
+        catch (Exception ex)
+        {
+            // Hiện lỗi thật thay vì nuốt im lặng (tester 2026-10-22):
+            // danh sách trống kèm lý do, tránh tưởng chưa có chi nhánh.
+            _branches = new();
+            _error = $"Không tải được danh sách chi nhánh: {ex.Message}";
+        }
         _loading = false;
     }
 

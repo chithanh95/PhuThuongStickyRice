@@ -109,9 +109,12 @@ else if (_report != null)
         await LoadAsync();
     }
 
-    private void SetYesterday()
+    private async Task SetYesterday()
     {
+        // Bấm "Hôm qua" là nạp luôn số liệu ngày đó (tester 2026-10-22):
+        // trước đây chỉ gán ngày, phải bấm thêm "Xem báo cáo" mới thấy.
         _date = DateTime.Today.AddDays(-1);
+        await LoadAsync();
     }
 
     private async Task LoadAsync()

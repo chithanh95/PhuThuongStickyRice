@@ -1,17 +1,23 @@
+@using PhuThuongStickyRice.Web.Components.Core.Services
 @inject NavigationManager Navigation
 
 @* Chuyển thẳng về trang đăng nhập (kèm returnUrl) thay vì bắt người dùng
    bấm link — dùng trong App.razor cho khối NotAuthorized khi CHƯA đăng
-   nhập (kể cả trường hợp token đã hết hạn bị provider coi là anonymous). *@
+   nhập (kể cả trường hợp token đã hết hạn bị provider coi là anonymous).
+   Trang đăng nhập được chọn theo khu vực (LoginRoutes): trang nhân viên
+   (admin/dashboard/orders/products/customers) về /login — tài khoản
+   admin đăng nhập bằng email ở đó; trang khách về /dang-nhap (SĐT).
+   Trước đây mọi trang đều về /dang-nhap nên admin mở thẳng link quản
+   trị là không đăng nhập lại được (user báo 2026-10-22). *@
 
 @code {
     /// <summary>
-    /// Ngay khi render là điều hướng về /dang-nhap với returnUrl là trang
-    /// hiện tại — đăng nhập xong DangNhap tự đưa người dùng quay lại đây.
+    /// Ngay khi render là điều hướng về trang đăng nhập đúng khu vực với
+    /// returnUrl là trang hiện tại — đăng nhập xong người dùng được đưa
+    /// quay lại đúng trang vừa mở.
     /// </summary>
     protected override void OnInitialized()
     {
-        var returnUrl = Uri.EscapeDataString("/" + Navigation.ToBaseRelativePath(Navigation.Uri));
-        Navigation.NavigateTo($"/dang-nhap?returnUrl={returnUrl}");
+        Navigation.NavigateTo(LoginRoutes.GetLoginUrl(Navigation.ToBaseRelativePath(Navigation.Uri)));
     }
 }

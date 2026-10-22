@@ -66,14 +66,14 @@ namespace PhuThuongStickyRice.Web.Components.Core.Services
         }
 
         /// <summary>
-        /// 401 → session hết hạn: về trang đăng nhập.
+        /// 401 → session hết hạn: về trang đăng nhập đúng khu vực
+        /// (LoginRoutes — nhân viên /login, khách /dang-nhap).
         /// </summary>
         protected void HandleUnauthorized(HttpResponseMessage response)
         {
             if (response.StatusCode == HttpStatusCode.Unauthorized && _navigation != null)
             {
-                var returnUrl = Uri.EscapeDataString(_navigation.ToBaseRelativePath(_navigation.Uri));
-                _navigation.NavigateTo($"/dang-nhap?returnUrl={returnUrl}");
+                _navigation.NavigateTo(LoginRoutes.GetLoginUrl(_navigation.ToBaseRelativePath(_navigation.Uri)));
             }
         }
 

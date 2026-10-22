@@ -56,8 +56,10 @@ namespace PhuThuongStickyRice.Web.Services
                 // Bỏ qua: điều hướng về trang đăng nhập là việc chính.
             }
 
-            var returnUrl = Uri.EscapeDataString("/" + _navigation.ToBaseRelativePath(_navigation.Uri));
-            _navigation.NavigateTo($"/dang-nhap?returnUrl={returnUrl}");
+            // Trang đích theo khu vực (LoginRoutes): nhân viên về /login
+            // (email), khách về /dang-nhap (SĐT) — trước đây cứng /dang-nhap
+            // nên admin hết token giữa ca là không đăng nhập lại được.
+            _navigation.NavigateTo(LoginRoutes.GetLoginUrl(_navigation.ToBaseRelativePath(_navigation.Uri)));
             return response;
         }
 
@@ -72,11 +74,10 @@ namespace PhuThuongStickyRice.Web.Services
                 || path.EndsWith("/auth/refresh", StringComparison.OrdinalIgnoreCase);
         }
 
-        /// <summary>Đang ở trang đăng nhập thì không điều hướng nữa (tránh lặp).</summary>
+        /// <summary>Đang ở một trang đăng nhập (/dang-nhap hoặc /login) thì không điều hướng nữa (tránh lặp).</summary>
         private bool IsOnLoginPage()
         {
-            var relative = _navigation.ToBaseRelativePath(_navigation.Uri);
-            return relative.StartsWith("dang-nhap", StringComparison.OrdinalIgnoreCase);
+            return LoginRoutes.IsLoginPath(_navigation.ToBaseRelativePath(_navigation.Uri));
         }
     }
 }
