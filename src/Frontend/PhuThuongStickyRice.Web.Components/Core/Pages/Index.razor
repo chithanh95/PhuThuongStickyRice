@@ -53,8 +53,10 @@ else
     </div>
 }
 
+<!-- Các thanh thông báo phụ: chỉ hiện TỐI ĐA 1 thanh theo _topBanner -->
+
 <!-- COUNTDOWN KHUYẾN MÃI (item 4) -->
-@if (_content.PromoCountdownActive && _content.PromoCountdownEnd > DateTime.Now)
+@if (_topBanner == "countdown")
 {
     <div class="sg-countdown-bar">
         <span class="sg-countdown-text">🔥 @_content.PromoCountdownText</span>
@@ -65,7 +67,7 @@ else
 }
 
 <!-- NHẮC ĐẶT LẠI (item 41) -->
-@if (_showReorderBanner)
+@if (_topBanner == "reorder")
 {
     <div class="sg-reorder-bar">
         🍚 Thèm xôi chưa bạn? Đã 1 tuần rồi đó — <a href="/shop">đặt lại 1 chạm →</a>
@@ -74,7 +76,7 @@ else
 }
 
 <!-- BANNER LỄ/TẾT (item 20) -->
-@if (_nextHoliday != null)
+@if (_topBanner == "holiday")
 {
     <div class="sg-holiday-bar">
         🎉 @_nextHoliday.Reason — @_nextHoliday.HolidayDate.ToString("dd/MM"): Đặt xôi cúng sớm để quán chuẩn bị chu đáo!
@@ -83,7 +85,7 @@ else
 }
 
 <!-- BANNER THỜI TIẾT (item 26) -->
-@if (_showColdBanner)
+@if (_topBanner == "weather")
 {
     <div class="sg-weather-bar">
         🥶 Trời lạnh @(_coldTemp)°C — xôi nóng hổi, đặt ngay kẻo nguội! <a href="/shop">Đặt ngay →</a>
@@ -91,7 +93,7 @@ else
 }
 
 <!-- BANNER OFF-PEAK (item 48) -->
-@if (_offpeak != null && _offpeak.IsNow && _offpeak.DiscountAmount > 0)
+@if (_topBanner == "offpeak")
 {
     <div class="sg-offpeak-bar">
         ⏰ Khung giờ vắng khách (@_offpeak.StartHour h – @_offpeak.EndHour h): giảm ngay @_offpeak.DiscountAmount.ToString("N0")đ mỗi đơn! <a href="/shop">Đặt ngay →</a>
@@ -105,7 +107,7 @@ else
             <img class="sg-logo-img" src="/images/logo-round.png" alt="Logo Xôi Huyền" />
             <span class="sg-logo-text">
                 <span class="sg-logo-main">Xôi Huyền</span>
-                <span class="sg-logo-sub">Vietnamese Cuisine</span>
+                <span class="sg-logo-sub">Làng nghề Hà Nội</span>
             </span>
         </a>
         <input type="checkbox" id="sg-nav-toggle" class="sg-nav-checkbox" />
@@ -120,12 +122,20 @@ else
             <div class="sg-lang-dropdown">
                 <LanguageSelector Compact="true" />
             </div>
+            @* Nút chữ lớn A+ như header shop (đội UI/UX rà 2026-10-23:
+               trước đây landing không có — khách lớn tuổi vào từ trang chủ
+               không phóng to được chữ cho tới khi sang trang shop). *@
+            <button class="sg-theme-toggle" @onclick="ToggleLargeText" title="Chữ lớn" aria-label="Chế độ chữ lớn" aria-pressed="@_isLargeText">
+                <span class="sg-text-size-icon">A+</span>
+            </button>
             <button class="sg-theme-toggle" @onclick="ToggleTheme" title="Chế độ tối/sáng" aria-label="Chế độ tối/sáng">
                 @(_isDark ? "🌙" : "☀️")
             </button>
             @if (!string.IsNullOrWhiteSpace(_content.ContactPhone))
             {
-                <a class="sg-hotline" href="tel:@_content.ContactPhone">📞 @_content.ContactPhone</a>
+                @* Chỉ icon gọi như header shop (user chốt 2026-10-23: menu
+                   đã có mục Liên hệ, số đầy đủ nằm ở footer). *@
+                <a class="sg-hotline" href="tel:@_content.ContactPhone" title="Gọi cho quán" aria-label="Gọi cho quán">📞</a>
             }
             else
             {
@@ -747,7 +757,6 @@ else
                 <a href="#gioi-thieu">Giới thiệu</a>
                 <a href="/shop">Món đặc trưng</a>
                 <a href="#thuc-don">Thực đơn</a>
-                <a href="/shop">Đặt xôi online</a>
                 <a href="/dat-tiec">Đặt tiệc</a>
                 <a href="/dat-so-luong-lon">Đặt số lượng lớn</a>
                 <a href="/nhuong-quyen">Nhượng quyền</a>
@@ -780,14 +789,11 @@ else
 
 <!-- NÚT CỐ ĐỊNH -->
 <div class="sg-fixed-btns">
-    <a class="sg-fb-btn" href="https://www.facebook.com/" target="_blank" rel="noopener" aria-label="Facebook" title="Facebook">f</a>
+    @* ĐÃ BỎ 2 nút (đội UI/UX rà 2026-10-23): nút Facebook trỏ viết cứng
+       về trang chủ facebook.com (chưa có link fanpage trong cấu hình —
+       khi nào có link fanpage thật sẽ gắn lại từ trang quản trị landing);
+       nút gọi tròn bị trùng thanh "Gọi quán" dính dưới màn mobile. *@
     <a class="sg-zalo-btn" href="@ZaloUrl" target="_blank" rel="noopener" aria-label="Chat Zalo" title="Chat Zalo">Z</a>
-    @if (!string.IsNullOrWhiteSpace(_content.ContactPhone))
-    {
-        <a class="sg-call-btn" href="tel:@_content.ContactPhone" aria-label="Gọi ngay" title="Gọi ngay">
-            <span class="fa-solid fa-phone" aria-hidden="true"></span>
-        </a>
-    }
 </div>
 
 <!-- NÚT VỀ ĐẦU TRANG (góc phải) -->
@@ -1127,6 +1133,39 @@ else
         await ShopTheme.ApplyAsync(JSRuntime, _isDark);
     }
 
+    /// <summary>Trạng thái chế độ chữ lớn (dùng chung localStorage với shop).</summary>
+    private bool _isLargeText;
+
+    /// <summary>
+    /// Bật/tắt chữ lớn qua JS ptToggleLargeText — cùng cơ chế header shop,
+    /// trạng thái nhớ trong localStorage nên sang trang nào cũng giữ nguyên.
+    /// </summary>
+    private async Task ToggleLargeText()
+    {
+        try
+        {
+            _isLargeText = await JSRuntime.InvokeAsync<bool>("ptToggleLargeText");
+            StateHasChanged();
+        }
+        catch { }
+    }
+
+    /// <summary>
+    /// Thanh thông báo phụ được hiện trên đầu landing — TỐI ĐA 1 thanh
+    /// (đội UI/UX rà 2026-10-23: trước đây 5 thanh countdown/lễ/giờ vắng/
+    /// thời tiết/nhắc đặt lại có thể xếp chồng cùng lúc ~200px đẩy hero
+    /// xuống). Thứ tự ưu tiên: khuyến mãi > lễ > giờ vắng > thời tiết >
+    /// nhắc đặt lại. Thanh flash của admin (có nút đóng riêng) không thuộc
+    /// nhóm này.
+    /// </summary>
+    private string _topBanner =>
+        _content.PromoCountdownActive && _content.PromoCountdownEnd > DateTime.Now ? "countdown"
+        : _nextHoliday != null ? "holiday"
+        : _offpeak != null && _offpeak.IsNow && _offpeak.DiscountAmount > 0 ? "offpeak"
+        : _showColdBanner ? "weather"
+        : _showReorderBanner ? "reorder"
+        : null;
+
     private string HeroTitleText =>
         string.IsNullOrWhiteSpace(_content.HeroTitle) ? "Xôi Huyền" : _content.HeroTitle;
 
@@ -1316,6 +1355,14 @@ else
     {
         if (firstRender)
         {
+            // Áp trạng thái chữ lớn đã lưu (khách bật ở shop sang landing vẫn giữ).
+            try
+            {
+                await JSRuntime.InvokeVoidAsync("ptApplyLargeText");
+                _isLargeText = await JSRuntime.InvokeAsync<bool>("ptGetLargeText");
+                StateHasChanged();
+            }
+            catch { }
             try { await JSRuntime.InvokeVoidAsync("ptInitCtaParallax"); } catch { }
             try { await JSRuntime.InvokeVoidAsync("ptInitReveal"); } catch { }
             try { await JSRuntime.InvokeVoidAsync("ptInitCountdown"); } catch { }

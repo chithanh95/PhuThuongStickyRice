@@ -1,4 +1,4 @@
-using PhuThuongStickyRice.Domain.Exceptions;
+﻿using PhuThuongStickyRice.Domain.Exceptions;
 using PhuThuongStickyRice.Domain.ValueObjects;
 using System;
 using System.Collections.Generic;
@@ -141,35 +141,35 @@ namespace PhuThuongStickyRice.Domain.Entities
         {
             if (productId == Guid.Empty)
             {
-                throw new DomainException("Order line must reference a product.");
+                throw new DomainException("Món trong đơn phải gắn với một sản phẩm.");
             }
 
             if (string.IsNullOrWhiteSpace(productName))
             {
-                throw new DomainException("Order line product name must not be empty.");
+                throw new DomainException("Tên món không được để trống.");
             }
 
             if (unitPrice == null)
             {
-                throw new DomainException("Order line unit price is required.");
+                throw new DomainException("Thiếu đơn giá của món.");
             }
 
             if (quantity < 1)
             {
-                throw new DomainException("Order line quantity must be at least 1.");
+                throw new DomainException("Số lượng món phải từ 1 trở lên.");
             }
 
             if (toppingsExtra < 0)
             {
-                throw new DomainException("Toppings extra must not be negative.");
+                throw new DomainException("Phụ thu topping không được âm.");
             }
 
             // [codequality-smell 2026-10-20] Kiểm tra độ dài gom về
             // TextValidation dùng chung với Order — giữ nguyên kiểu đo độ
             // dài thô (Length, không trim) như bản cũ.
-            TextValidation.MaxLength(sizeName, SizeNameMaxLength, "Size name", trimBeforeCheck: false);
-            TextValidation.MaxLength(toppingNames, ToppingNamesMaxLength, "Topping names", trimBeforeCheck: false);
-            TextValidation.MaxLength(note, NoteMaxLength, "Order line note", trimBeforeCheck: false);
+            TextValidation.MaxLength(sizeName, SizeNameMaxLength, "Tên kích cỡ", trimBeforeCheck: false);
+            TextValidation.MaxLength(toppingNames, ToppingNamesMaxLength, "Tên topping", trimBeforeCheck: false);
+            TextValidation.MaxLength(note, NoteMaxLength, "Ghi chú món", trimBeforeCheck: false);
 
             // Id topping -> CSV để lưu 1 cột: bỏ Guid.Empty và trùng lặp,
             // rỗng thì lưu null như các cột snapshot khác.
@@ -180,7 +180,7 @@ namespace PhuThuongStickyRice.Domain.Entities
             {
                 toppingIdsCsv = null;
             }
-            TextValidation.MaxLength(toppingIdsCsv, ToppingIdsMaxLength, "Topping ids", trimBeforeCheck: false);
+            TextValidation.MaxLength(toppingIdsCsv, ToppingIdsMaxLength, "Mã topping", trimBeforeCheck: false);
 
             return new OrderLine(
                 productId,
@@ -224,7 +224,7 @@ namespace PhuThuongStickyRice.Domain.Entities
         {
             if (quantity < 0)
             {
-                throw new DomainException("Order line quantity cannot be negative.");
+                throw new DomainException("Số lượng món không được âm.");
             }
 
             Quantity = quantity;

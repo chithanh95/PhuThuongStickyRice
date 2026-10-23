@@ -1,4 +1,4 @@
-@page "/shop"
+﻿@page "/shop"
 <PageTitle>Thực đơn — Xôi Huyền</PageTitle>
 @using System
 @using System.Collections.Generic
@@ -43,17 +43,11 @@
                 {
                     <p class="mb-0"><span class="badge badge-danger" style="font-size: 1rem;">🔥 @ShopLocalizationService.Translate("sold_today"): @_todaySold</span></p>
                 }
-                @* Wave 6a (item 22): open-hours display (VN time). *@
-                @if (!string.IsNullOrEmpty(_openStatusText))
-                {
-                    <p class="mb-0 mt-1"><span class="badge @(_openNow ? "badge-success" : "badge-danger")" style="font-size: 1rem;">@_openStatusText</span></p>
-                }
-                @if (OrdersPaused)
-                {
-                    <div class="alert alert-warning mt-2 mb-0" role="alert">
-                        ⏸ @(HolidayPaused ? _shopSettings.PausedReason : "Quán tạm ngưng nhận đơn" + (string.IsNullOrWhiteSpace(_shopSettings.PausedReason) ? "." : ": " + _shopSettings.PausedReason))
-                    </div>
-                }
+                @* ĐÃ BỎ badge giờ mở cửa + alert tạm ngưng ở hero (đội UI/UX
+                   rà 2026-10-23): ShopStatusBanner ở đầu trang đã hiện đủ
+                   cả 3 trạng thái kèm lý do — hero lặp lại nguyên văn gây
+                   rối. Logic tính _openStatusText/OrdersPaused vẫn giữ
+                   nguyên cho các chốt chặn đặt hàng bên dưới. *@
             </div>
             <a class="btn btn-dark mt-2" href="/menu-print" target="_blank" title="Mở thực đơn để in / lưu PDF">
                 📄 Tải menu (PDF)
@@ -99,16 +93,19 @@
 {
     <div class="card mb-4">
         <div class="card-body">
+            @* Bảng gợi ý chọn món: KHÔNG có cột giá — giá thật lấy từ DB ở
+               lưới món bên dưới (trước đây giá gõ cứng 35k/25k... trong
+               markup, admin đổi giá là bảng này sai lệch âm thầm). *@
             <h4 class="card-title">Xôi nào hợp bạn?</h4>
             <div class="table-responsive">
                 <table class="table table-striped">
-                    <thead class="thead-dark"><tr><th scope="col">Món</th><th scope="col">Vị</th><th scope="col">Giá</th><th scope="col">Hợp với</th></tr></thead>
+                    <thead class="thead-dark"><tr><th scope="col">Món</th><th scope="col">Vị</th><th scope="col">Hợp với</th></tr></thead>
                     <tbody>
-                        <tr><td><strong>Xôi gấc</strong></td><td>Ngọt nhẹ, béo</td><td>35k</td><td>Tiệc, cúng, biếu</td></tr>
-                        <tr><td><strong>Xôi xéo</strong></td><td>Mặn, thơm hành</td><td>25k</td><td>Ăn sáng mỗi ngày</td></tr>
-                        <tr><td><strong>Xôi đỗ</strong></td><td>Bùi, dẻo</td><td>25k</td><td>Người thích vị quê</td></tr>
-                        <tr><td><strong>Xôi vò</strong></td><td>Tơi, không ngán</td><td>30k</td><td>Ăn trưa văn phòng</td></tr>
-                        <tr><td><strong>Xôi ngũ sắc</strong></td><td>Đẹp mắt, dẻo</td><td>40k</td><td>Mâm cỗ, chụp ảnh</td></tr>
+                        <tr><td><strong>Xôi gấc</strong></td><td>Ngọt nhẹ, béo</td><td>Tiệc, cúng, biếu</td></tr>
+                        <tr><td><strong>Xôi xéo</strong></td><td>Mặn, thơm hành</td><td>Ăn sáng mỗi ngày</td></tr>
+                        <tr><td><strong>Xôi đỗ</strong></td><td>Bùi, dẻo</td><td>Người thích vị quê</td></tr>
+                        <tr><td><strong>Xôi vò</strong></td><td>Tơi, không ngán</td><td>Ăn trưa văn phòng</td></tr>
+                        <tr><td><strong>Xôi ngũ sắc</strong></td><td>Đẹp mắt, dẻo</td><td>Mâm cỗ, chụp ảnh</td></tr>
                     </tbody>
                 </table>
             </div>

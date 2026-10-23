@@ -1,4 +1,4 @@
-using PhuThuongStickyRice.Domain.Exceptions;
+﻿using PhuThuongStickyRice.Domain.Exceptions;
 using System.Collections.Generic;
 
 namespace PhuThuongStickyRice.Domain.ValueObjects
@@ -32,7 +32,7 @@ namespace PhuThuongStickyRice.Domain.ValueObjects
         {
             if (string.IsNullOrWhiteSpace(value))
             {
-                throw new DomainException("Product code must not be empty.");
+                throw new DomainException("Mã món không được để trống.");
             }
 
             var normalized = value.Trim().ToUpperInvariant();

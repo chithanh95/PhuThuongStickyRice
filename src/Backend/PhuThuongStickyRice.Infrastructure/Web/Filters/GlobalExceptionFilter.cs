@@ -61,14 +61,14 @@ namespace PhuThuongStickyRice.Infrastructure.Web.Filters
         {
             return _options.DetailLevel switch
             {
-                GlobalExceptionDetailLevel.None => "An internal exception has occurred.",
+                GlobalExceptionDetailLevel.None => "Đã có lỗi xảy ra. Vui lòng thử lại.",
                 GlobalExceptionDetailLevel.Message => ex.Message,
                 // ex.StackTrace có thể null (vd: exception chưa từng được throw)
                 // → coalesce để contract "Message luôn là chuỗi" của JSON lỗi 500
                 // giữ nguyên, không trả về "Message": null.
-                GlobalExceptionDetailLevel.StackTrace => ex.StackTrace ?? "An internal exception has occurred.",
+                GlobalExceptionDetailLevel.StackTrace => ex.StackTrace ?? "Đã có lỗi xảy ra. Vui lòng thử lại.",
                 GlobalExceptionDetailLevel.ToString => ex.ToString(),
-                _ => "An internal exception has occurred.",
+                _ => "Đã có lỗi xảy ra. Vui lòng thử lại.",
             };
         }
     }

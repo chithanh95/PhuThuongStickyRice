@@ -1,10 +1,12 @@
-﻿@* Trang tài khoản khách hàng: gồm 6 khối — thông tin cá nhân, hạng thành
-   viên loyalty (Đồng/Bạc/Vàng + điểm + tổng đã mua), lịch sử đơn hàng
-   (20 đơn gần nhất, có nút "Đặt lại" thêm toàn bộ món của đơn cũ vào giỏ),
-   khẩu vị (item 90 — quán tự điền vào ghi chú mỗi lần đặt), ngày sinh +
-   quà sinh nhật (item 92 — chỉ được đổi 1 lần/năm, chống gian lận quà),
-   đổi mật khẩu và địa chỉ đã lưu. Nhân viên (Admin/Cashier/Kitchen) bị
-   chuyển sang trang hồ sơ admin riêng, không dùng trang này. *@
+﻿@* Trang tài khoản khách hàng: 3 TAB (user chốt 2026-10-23) — 👤 Hồ sơ:
+   FORM GỘP thông tin cá nhân + ngày sinh + quà sinh nhật (item 92, đổi
+   1 lần/năm chống gian lận quà) + khẩu vị (item 90 — quán tự điền vào
+   ghi chú mỗi lần đặt) + sổ địa chỉ, CHỈ 1 nút "Lưu thay đổi"; dưới form
+   là hạng thành viên loyalty (Đồng/Bạc/Vàng + điểm + tổng đã mua).
+   🧾 Đơn hàng: lịch sử 20 đơn gần nhất, có nút "Đặt lại" thêm toàn bộ món
+   của đơn cũ vào giỏ. 🔒 Bảo mật: đổi mật khẩu. Nút Đăng xuất nằm ngoài
+   tab ở cuối trang. Nhân viên (Admin/Cashier/Kitchen) bị chuyển sang
+   trang hồ sơ admin riêng, không dùng trang này. *@
 @page "/tai-khoan"
 @using System.Collections.Generic
 @using System.Linq
@@ -42,15 +44,176 @@
     else
     {
 
+        <div class="tk-tabs" role="tablist" aria-label="Mục tài khoản" @onkeydown="OnTablistKeyDown">
+            <button type="button" role="tab" id="tk-tab-profile" aria-controls="tk-panel-profile" aria-selected="@(_tab == "profile")" class="tk-tab @(_tab == "profile" ? "active" : "")" @onclick='() => SwitchTab("profile")'>👤 Hồ sơ</button>
+            <button type="button" role="tab" id="tk-tab-orders" aria-controls="tk-panel-orders" aria-selected="@(_tab == "orders")" class="tk-tab @(_tab == "orders" ? "active" : "")" @onclick='() => SwitchTab("orders")'>🧾 Đơn hàng</button>
+            <button type="button" role="tab" id="tk-tab-security" aria-controls="tk-panel-security" aria-selected="@(_tab == "security")" class="tk-tab @(_tab == "security" ? "active" : "")" @onclick='() => SwitchTab("security")'>🔒 Bảo mật</button>
+        </div>
+
+        @if (_tab == "profile")
+        {
+            <div role="tabpanel" id="tk-panel-profile" aria-labelledby="tk-tab-profile">
         <div class="card mb-4">
             <div class="card-body">
-                <h5 class="card-title">Thông tin cá nhân</h5>
-                <p class="mb-1"><strong>Số điện thoại:</strong> @_userName</p>
-                @if (!string.IsNullOrWhiteSpace(_email))
+                <h5 class="card-title">👤 Thông tin của tôi</h5>
+                <div class="tk-form-section">
+                    <p class="mb-1"><strong>Số điện thoại:</strong> @_userName</p>
+                    @if (!string.IsNullOrWhiteSpace(_email))
+                    {
+                        <p class="mb-1"><strong>Email:</strong> @_email</p>
+                    }
+                    <p class="mb-0"><strong>Vai trò:</strong> @(string.Join(", ", _roles.Select(RoleText)))</p>
+                </div>
+                <div class="tk-form-section">
+                    <h6 class="tk-section-title">🎂 Ngày sinh</h6>
+                    @if (!string.IsNullOrWhiteSpace(_profile.BirthdayGiftCode))
+                    {
+                        <div class="alert alert-warning">
+                            🎁 Quà sinh nhật năm nay của bạn: <strong>@_profile.BirthdayGiftCode</strong>
+                            @if (_profile.BirthdayGiftAmount.HasValue)
+                            {
+                                <span> (giảm @_profile.BirthdayGiftAmount.Value.ToString("N0") ₫)</span>
+                            }
+                            @if (_profile.BirthdayGiftExpiresAt.HasValue)
+                            {
+                                <span> — HSD @_profile.BirthdayGiftExpiresAt.Value.ToLocalTime().ToString("dd/MM/yyyy")</span>
+                            }
+                            <div class="small mt-1">Nhập mã này ở bước thanh toán để được giảm giá.</div>
+                        </div>
+                    }
+                    <div class="form-group tk-form-narrow mb-0">
+                        <label for="tk-dob">Ngày sinh</label>
+                        <input id="tk-dob" type="date" class="form-control" @bind="_dobValue" disabled="@(!_profile.CanChangeDateOfBirth)" />
+                        <small class="text-muted">
+                            @(string.IsNullOrWhiteSpace(_profile.DateOfBirthChangeHint)
+                                ? "Ngày sinh chỉ được thay đổi 1 lần mỗi năm."
+                                : _profile.DateOfBirthChangeHint)
+                        </small>
+                    </div>
+                </div>
+                <div class="tk-form-section">
+                    <h6 class="tk-section-title">🍜 Khẩu vị của tôi</h6>
+                    <p class="text-muted small">Quán sẽ nhớ khẩu vị này và tự điền vào ghi chú mỗi lần bạn đặt hàng.</p>
+                    <div class="mb-2">
+                        @foreach (var tag in _tastePresets)
+                        {
+                            var currentTag = tag;
+                            <button type="button"
+                                    class="btn btn-sm mr-2 mb-2 @(_selectedTags.Contains(currentTag) ? "btn-warning" : "btn-outline-secondary")"
+                                    aria-pressed="@_selectedTags.Contains(currentTag)"
+                                    @onclick="() => ToggleTag(currentTag)">@currentTag</button>
+                        }
+                    </div>
+                    <div class="input-group mb-2 tk-form-narrow tk-tag-add">
+                        <input class="form-control" placeholder="Thêm khẩu vị khác..." aria-label="Thêm khẩu vị khác" @bind="_customTag" />
+                        <div class="input-group-append">
+                            <button class="btn btn-outline-primary" @onclick="AddCustomTag">Thêm</button>
+                        </div>
+                    </div>
+                    <div class="form-group tk-form-narrow">
+                        <label for="tk-taste-note">Ghi chú thêm</label>
+                        <input id="tk-taste-note" class="form-control" @bind="_profile.TasteNote" placeholder="VD: xôi dẻo một chút" />
+                    </div>
+
+                </div>
+                <div class="tk-form-section">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h6 class="tk-section-title mb-0">📇 Địa chỉ đã lưu</h6>
+                        <button class="btn btn-sm btn-outline-primary" @onclick="StartAdd">+ Thêm địa chỉ</button>
+                    </div>
+
+                    @if (!string.IsNullOrEmpty(_addrError))
+                    {
+                        <div class="alert alert-danger" role="alert">@_addrError</div>
+                    }
+
+                    @if (_editing)
+                    {
+                        <div class="tk-addr-panel border rounded p-3 mb-3">
+                            <div class="form-row">
+                                <div class="form-group col-md-4">
+                                    <label for="tk-addr-label">Tên gợi nhớ</label>
+                                    <input id="tk-addr-label" class="form-control" @bind="_form.Label" placeholder="Nhà, Công ty..." />
+                                </div>
+                                <div class="form-group col-md-8">
+                                    <label for="tk-addr-receiver">Tên người nhận *</label>
+                                    <input id="tk-addr-receiver" class="form-control" @bind="_form.ReceiverName" placeholder="Nguyễn Văn A" />
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group col-md-6">
+                                    <label for="tk-addr-phone">SĐT người nhận *</label>
+                                    <input id="tk-addr-phone" class="form-control" @bind="_form.ReceiverPhone" inputmode="tel" placeholder="0901234567" />
+                                </div>
+                                <div class="form-group col-md-6">
+                                    <div class="form-check mt-4 pt-2">
+                                        <input type="checkbox" class="form-check-input" id="addr-default" @bind="_form.IsDefault" />
+                                        <label class="form-check-label" for="addr-default">Đặt làm mặc định</label>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label for="tk-addr-detail">Địa chỉ chi tiết *</label>
+                                <input id="tk-addr-detail" class="form-control" @bind="_form.AddressDetail" placeholder="Số nhà, đường, phường/xã..." />
+                            </div>
+                            <div class="form-group">
+                                <label for="tk-addr-note">Ghi chú</label>
+                                <input id="tk-addr-note" class="form-control" @bind="_form.Note" placeholder="VD: gọi trước khi đến" />
+                            </div>
+                            <button class="btn btn-link" @onclick="CancelEdit">Hủy</button>
+                            <small class="text-muted d-block mt-1">Nhập xong, bấm nút "Lưu thay đổi" ở cuối mục Hồ sơ để lưu cả địa chỉ này.</small>
+                        </div>
+                    }
+
+                    @if (_addresses == null)
+                    {
+                        <p class="text-muted"><em>Đang tải địa chỉ...</em></p>
+                    }
+                    else if (_addresses.Count == 0 && !_editing)
+                    {
+                        <p class="text-muted">Chưa có địa chỉ nào. Thêm địa chỉ để đặt hàng nhanh hơn.</p>
+                    }
+                    else
+                    {
+                        @foreach (var address in _addresses)
+                        {
+                            <div class="border rounded p-3 mb-2 d-flex justify-content-between align-items-start">
+                                <div>
+                                    <strong>
+                                        @(!string.IsNullOrWhiteSpace(address.Label) ? address.Label + " — " : "")@address.ReceiverName
+                                    </strong>
+                                    @if (address.IsDefault)
+                                    {
+                                        <span class="badge badge-success ml-1">Mặc định</span>
+                                    }
+                                    <div class="text-muted small">@address.ReceiverPhone</div>
+                                    <div>@address.AddressDetail</div>
+                                    @if (!string.IsNullOrWhiteSpace(address.Note))
+                                    {
+                                        <div class="text-muted small"><em>@address.Note</em></div>
+                                    }
+                                </div>
+                                <div class="btn-group btn-group-sm">
+                                    @if (!address.IsDefault)
+                                    {
+                                        <button class="btn btn-outline-secondary" title="Đặt mặc định" aria-label="Đặt làm địa chỉ mặc định" @onclick="() => SetDefaultAsync(address.Id)">★</button>
+                                    }
+                                    <button class="btn btn-outline-primary" @onclick="() => StartEdit(address)">Sửa</button>
+                                    <button class="btn btn-outline-danger" @onclick="() => DeleteAsync(address.Id)">Xóa</button>
+                                </div>
+                            </div>
+                        }
+                    }
+                </div>
+                @if (!string.IsNullOrEmpty(_profileMsg))
                 {
-                    <p class="mb-1"><strong>Email:</strong> @_email</p>
+                    @* A11y: thông báo động sau khi lưu — role alert/status để screen reader đọc ngay. *@
+                    <div class="alert @(_profileOk ? "alert-success" : "alert-danger") py-2 mt-3" role="@(_profileOk ? "status" : "alert")">@_profileMsg</div>
                 }
-                <p class="mb-0"><strong>Vai trò:</strong> @(string.Join(", ", _roles))</p>
+                <button class="btn btn-primary"
+                        @onclick="SaveAllAsync" disabled="@(_profileBusy || _addrBusy)">
+                    @(_profileBusy || _addrBusy ? "Đang lưu..." : "Lưu thay đổi")
+                </button>
             </div>
         </div>
 
@@ -83,18 +246,18 @@
                     }
                     else
                     {
-                        <div class="row text-center">
-                            <div class="col-4">
-                                <div class="h5 mb-0 text-primary">@_loyalty.Points.ToString("N0")</div>
-                                <small class="text-muted">Điểm tích lũy</small>
+                        <div class="tk-stats">
+                            <div class="tk-stat-row">
+                                <span class="tk-stat-label">Điểm tích lũy</span>
+                                <span class="tk-stat-value text-primary">@_loyalty.Points.ToString("N0")</span>
                             </div>
-                            <div class="col-4">
-                                <div class="h5 mb-0">@_loyalty.TotalSpent.ToString("N0") ₫</div>
-                                <small class="text-muted">Tổng đã mua</small>
+                            <div class="tk-stat-row">
+                                <span class="tk-stat-label">Tổng đã mua</span>
+                                <span class="tk-stat-value">@_loyalty.TotalSpent.ToString("N0") ₫</span>
                             </div>
-                            <div class="col-4">
-                                <div class="h5 mb-0">@_loyalty.TotalEarned.ToString("N0")</div>
-                                <small class="text-muted">Tổng điểm đã kiếm</small>
+                            <div class="tk-stat-row">
+                                <span class="tk-stat-label">Tổng điểm đã kiếm</span>
+                                <span class="tk-stat-value">@_loyalty.TotalEarned.ToString("N0")</span>
                             </div>
                         </div>
                     }
@@ -104,7 +267,11 @@
                 }
             </div>
         </div>
-
+            </div>
+        }
+        else if (_tab == "orders")
+        {
+            <div role="tabpanel" id="tk-panel-orders" aria-labelledby="tk-tab-orders">
         <div class="card mb-4">
             <div class="card-body">
                 <h5 class="card-title">🧾 Lịch sử đơn hàng</h5>
@@ -148,85 +315,11 @@
                 }
             </div>
         </div>
-
-        <div class="card mb-4">
-            <div class="card-body">
-                <h5 class="card-title">🍜 Khẩu vị của tôi</h5>
-                <p class="text-muted small">Quán sẽ nhớ khẩu vị này và tự điền vào ghi chú mỗi lần bạn đặt hàng.</p>
-                @if (!string.IsNullOrEmpty(_tasteMsg))
-                {
-                    @* A11y: thông báo động sau khi lưu — role alert/status để screen reader đọc ngay. *@
-                    <div class="alert @(_tasteOk ? "alert-success" : "alert-danger") py-2" role="@(_tasteOk ? "status" : "alert")">@_tasteMsg</div>
-                }
-                <div class="mb-2">
-                    @foreach (var tag in _tastePresets)
-                    {
-                        var currentTag = tag;
-                        <button type="button"
-                                class="btn btn-sm mr-2 mb-2 @(_selectedTags.Contains(currentTag) ? "btn-warning" : "btn-outline-secondary")"
-                                aria-pressed="@_selectedTags.Contains(currentTag)"
-                                @onclick="() => ToggleTag(currentTag)">@currentTag</button>
-                    }
-                </div>
-                <div class="input-group mb-2 tk-form-narrow">
-                    <input class="form-control" placeholder="Thêm khẩu vị khác..." aria-label="Thêm khẩu vị khác" @bind="_customTag" />
-                    <div class="input-group-append">
-                        <button class="btn btn-outline-primary" @onclick="AddCustomTag">Thêm</button>
-                    </div>
-                </div>
-                <div class="form-group tk-form-narrow">
-                    <label for="tk-taste-note">Ghi chú thêm</label>
-                    <input id="tk-taste-note" class="form-control" @bind="_profile.TasteNote" placeholder="VD: xôi dẻo một chút" />
-                </div>
-                <button class="btn btn-primary"
-                        @onclick="SaveTasteAsync" disabled="@_tasteBusy">
-                    @(_tasteBusy ? "Đang lưu..." : "Lưu khẩu vị")
-                </button>
             </div>
-        </div>
-
-        <div class="card mb-4">
-            <div class="card-body">
-                <h5 class="card-title">🎂 Sinh nhật</h5>
-                @if (!string.IsNullOrEmpty(_dobMsg))
-                {
-                    <div class="alert @(_dobOk ? "alert-success" : "alert-danger") py-2" role="@(_dobOk ? "status" : "alert")">@_dobMsg</div>
-                }
-                @if (!string.IsNullOrWhiteSpace(_profile.BirthdayGiftCode))
-                {
-                    <div class="alert alert-warning">
-                        🎁 Quà sinh nhật năm nay của bạn: <strong>@_profile.BirthdayGiftCode</strong>
-                        @if (_profile.BirthdayGiftAmount.HasValue)
-                        {
-                            <span> (giảm @_profile.BirthdayGiftAmount.Value.ToString("N0") ₫)</span>
-                        }
-                        @if (_profile.BirthdayGiftExpiresAt.HasValue)
-                        {
-                            <span> — HSD @_profile.BirthdayGiftExpiresAt.Value.ToLocalTime().ToString("dd/MM/yyyy")</span>
-                        }
-                        <div class="small mt-1">Nhập mã này ở bước thanh toán để được giảm giá.</div>
-                    </div>
-                }
-                <div class="form-row align-items-end">
-                    <div class="form-group col-md-6 mb-2">
-                        <label for="tk-dob">Ngày sinh</label>
-                        <input id="tk-dob" type="date" class="form-control" @bind="_dobValue" />
-                        <small class="text-muted">
-                            @(string.IsNullOrWhiteSpace(_profile.DateOfBirthChangeHint)
-                                ? "Ngày sinh chỉ được thay đổi 1 lần mỗi năm."
-                                : _profile.DateOfBirthChangeHint)
-                        </small>
-                    </div>
-                    <div class="form-group col-md-6 mb-2">
-                        <button class="btn btn-primary"
-                                @onclick="SaveDobAsync" disabled="@(_dobBusy || !_profile.CanChangeDateOfBirth)">
-                            @(_dobBusy ? "Đang lưu..." : "Lưu ngày sinh")
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </div>
-
+        }
+        else
+        {
+            <div role="tabpanel" id="tk-panel-security" aria-labelledby="tk-tab-security">
         <div class="card mb-4">
             <div class="card-body">
                 <h5 class="card-title">Đổi mật khẩu</h5>
@@ -252,101 +345,8 @@
                 </button>
             </div>
         </div>
-
-        <div class="card mb-4">
-            <div class="card-body">
-                <div class="d-flex justify-content-between align-items-center mb-3">
-                    <h5 class="card-title mb-0">📇 Địa chỉ đã lưu</h5>
-                    <button class="btn btn-sm btn-outline-primary" @onclick="StartAdd">+ Thêm địa chỉ</button>
-                </div>
-
-                @if (!string.IsNullOrEmpty(_addrError))
-                {
-                    <div class="alert alert-danger" role="alert">@_addrError</div>
-                }
-
-                @if (_editing)
-                {
-                    <div class="tk-addr-panel border rounded p-3 mb-3">
-                        <div class="form-row">
-                            <div class="form-group col-md-4">
-                                <label for="tk-addr-label">Tên gợi nhớ</label>
-                                <input id="tk-addr-label" class="form-control" @bind="_form.Label" placeholder="Nhà, Công ty..." />
-                            </div>
-                            <div class="form-group col-md-8">
-                                <label for="tk-addr-receiver">Tên người nhận *</label>
-                                <input id="tk-addr-receiver" class="form-control" @bind="_form.ReceiverName" placeholder="Nguyễn Văn A" />
-                            </div>
-                        </div>
-                        <div class="form-row">
-                            <div class="form-group col-md-6">
-                                <label for="tk-addr-phone">SĐT người nhận *</label>
-                                <input id="tk-addr-phone" class="form-control" @bind="_form.ReceiverPhone" inputmode="tel" placeholder="0901234567" />
-                            </div>
-                            <div class="form-group col-md-6">
-                                <div class="form-check mt-4 pt-2">
-                                    <input type="checkbox" class="form-check-input" id="addr-default" @bind="_form.IsDefault" />
-                                    <label class="form-check-label" for="addr-default">Đặt làm mặc định</label>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="form-group">
-                            <label for="tk-addr-detail">Địa chỉ chi tiết *</label>
-                            <input id="tk-addr-detail" class="form-control" @bind="_form.AddressDetail" placeholder="Số nhà, đường, phường/xã..." />
-                        </div>
-                        <div class="form-group">
-                            <label for="tk-addr-note">Ghi chú</label>
-                            <input id="tk-addr-note" class="form-control" @bind="_form.Note" placeholder="VD: gọi trước khi đến" />
-                        </div>
-                        <button class="btn btn-primary mr-2"
-                                @onclick="SaveAddressAsync" disabled="@_addrBusy">
-                            @(_addrBusy ? "Đang lưu..." : "Lưu địa chỉ")
-                        </button>
-                        <button class="btn btn-link" @onclick="CancelEdit">Hủy</button>
-                    </div>
-                }
-
-                @if (_addresses == null)
-                {
-                    <p class="text-muted"><em>Đang tải địa chỉ...</em></p>
-                }
-                else if (_addresses.Count == 0 && !_editing)
-                {
-                    <p class="text-muted">Chưa có địa chỉ nào. Thêm địa chỉ để đặt hàng nhanh hơn.</p>
-                }
-                else
-                {
-                    @foreach (var address in _addresses)
-                    {
-                        <div class="border rounded p-3 mb-2 d-flex justify-content-between align-items-start">
-                            <div>
-                                <strong>
-                                    @(!string.IsNullOrWhiteSpace(address.Label) ? address.Label + " — " : "")@address.ReceiverName
-                                </strong>
-                                @if (address.IsDefault)
-                                {
-                                    <span class="badge badge-success ml-1">Mặc định</span>
-                                }
-                                <div class="text-muted small">@address.ReceiverPhone</div>
-                                <div>@address.AddressDetail</div>
-                                @if (!string.IsNullOrWhiteSpace(address.Note))
-                                {
-                                    <div class="text-muted small"><em>@address.Note</em></div>
-                                }
-                            </div>
-                            <div class="btn-group btn-group-sm">
-                                @if (!address.IsDefault)
-                                {
-                                    <button class="btn btn-outline-secondary" title="Đặt mặc định" aria-label="Đặt làm địa chỉ mặc định" @onclick="() => SetDefaultAsync(address.Id)">★</button>
-                                }
-                                <button class="btn btn-outline-primary" @onclick="() => StartEdit(address)">Sửa</button>
-                                <button class="btn btn-outline-danger" @onclick="() => DeleteAsync(address.Id)">Xóa</button>
-                            </div>
-                        </div>
-                    }
-                }
             </div>
-        </div>
+        }
 
         <button class="btn btn-outline-secondary" @onclick="LogoutAsync">Đăng xuất</button>
     }
@@ -381,18 +381,22 @@
     };
     private HashSet<string> _selectedTags = new HashSet<string>();
     private string _customTag;
-    private string _tasteMsg;
-    private bool _tasteOk;
-    private bool _tasteBusy;
+    // Thông báo + trạng thái lưu của FORM GỘP tab Hồ sơ: khẩu vị và ngày
+    // sinh dùng chung 1 vùng thông báo ngay trên nút "Lưu thay đổi" —
+    // trước đây mỗi card có vùng thông báo + nút Lưu riêng (user chê
+    // "nhiều form submit vậy", chốt gộp 2026-10-23).
+    private string _profileMsg;
+    private bool _profileOk;
+    private bool _profileBusy;
 
     // Độ dài tối đa của 1 khẩu vị tự nhập (giao diện đơn giản cho khách lớn tuổi).
     private const int MaxCustomTagLength = 50;
 
     // Item 92: birthday.
     private DateTime? _dobValue;
-    private string _dobMsg;
-    private bool _dobOk;
-    private bool _dobBusy;
+
+    // Tab đang chọn: profile (Hồ sơ) | orders (Đơn hàng) | security (Bảo mật).
+    private string _tab = "profile";
 
     // Lịch sử đơn hàng + hạng thành viên.
     private LoyaltyAccountModel _loyalty;
@@ -745,7 +749,7 @@
     /// <param name="tag">Khẩu vị được bấm.</param>
     private void ToggleTag(string tag)
     {
-        _tasteMsg = null;
+        _profileMsg = null;
         if (!_selectedTags.Add(tag))
         {
             _selectedTags.Remove(tag);
@@ -758,7 +762,7 @@
     /// </summary>
     private void AddCustomTag()
     {
-        _tasteMsg = null;
+        _profileMsg = null;
         var tag = (_customTag ?? string.Empty).Trim();
         if (tag.Length == 0)
         {
@@ -767,8 +771,8 @@
 
         if (tag.Length > MaxCustomTagLength)
         {
-            _tasteMsg = $"Mỗi khẩu vị tối đa {MaxCustomTagLength} ký tự.";
-            _tasteOk = false;
+            _profileMsg = $"Mỗi khẩu vị tối đa {MaxCustomTagLength} ký tự.";
+            _profileOk = false;
             return;
         }
 
@@ -777,12 +781,7 @@
     }
 
     /// <summary>
-    /// Lưu khẩu vị (item 90): gửi mảng tag lên server rồi dùng lại model
-    /// server trả về (đã chuẩn hóa) để hiển thị, tránh lệch giữa client/server.
-    /// Quán sẽ tự điền khẩu vị này vào ghi chú mỗi lần khách đặt hàng.
-    /// </summary>
-    /// <summary>
-    /// Mẫu chung lưu 1 trường hồ sơ (khẩu vị / ngày sinh): bật cờ busy, chạy
+    /// Mẫu chung lưu hồ sơ (khẩu vị / ngày sinh): bật cờ busy, chạy
     /// thao tác lưu, rồi gán thông báo thành công/thất bại. Lỗi nghiệp vụ
     /// (InvalidOperationException) giữ nguyên message của backend để khách
     /// hiểu (vd hết lượt đổi ngày sinh); lỗi khác báo câu thân thiện.
@@ -816,17 +815,78 @@
         }
     }
 
-    private async Task SaveTasteAsync() => await RunProfileSaveAsync(
-        setBusy: b => _tasteBusy = b,
-        setMessage: (message, isSuccess) => { _tasteMsg = message; _tasteOk = isSuccess; },
-        work: async () =>
+    /// <summary>Chuyển tab Hồ sơ / Đơn hàng / Bảo mật.</summary>
+    /// <param name="tab">Tab đích: profile | orders | security.</param>
+    private void SwitchTab(string tab) => _tab = tab;
+
+    /// <summary>
+    /// A11y: phím ←/→ chuyển tab theo ARIA tabs pattern (giống DangNhap).
+    /// 3 tab nên ← và → đều đi vòng tròn profile → orders → security.
+    /// </summary>
+    private void OnTablistKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key != "ArrowRight" && e.Key != "ArrowLeft")
         {
-            _profile.TasteTags = _selectedTags.ToList();
-            _profile = await CustomerProfileService.UpdateAsync(_profile);
-            _selectedTags = new HashSet<string>(_profile.TasteTags ?? new List<string>());
-        },
-        successMessage: "Đã lưu khẩu vị. Quán sẽ tự điền vào ghi chú mỗi lần bạn đặt hàng.",
-        errorMessage: "Lưu khẩu vị thất bại. Vui lòng thử lại.");
+            return;
+        }
+
+        var order = new[] { "profile", "orders", "security" };
+        var index = System.Array.IndexOf(order, _tab);
+        var next = e.Key == "ArrowRight"
+            ? (index + 1) % order.Length
+            : (index + order.Length - 1) % order.Length;
+        _tab = order[next];
+    }
+
+    /// <summary>
+    /// Dịch tên vai trò (claim role trong JWT) sang tiếng Việt cho khách
+    /// đọc — trước đây trang in nguyên "Customer" (user báo 2026-10-23).
+    /// </summary>
+    /// <param name="role">Tên vai trò gốc (Customer/Admin/Cashier/Kitchen).</param>
+    private static string RoleText(string role) => role switch
+    {
+        "Customer" => "Khách hàng",
+        "Admin" => "Quản trị viên",
+        "Cashier" => "Thu ngân",
+        "Kitchen" => "Nhân viên bếp",
+        _ => role,
+    };
+
+    /// <summary>
+    /// Nút "Lưu thay đổi" — nút lưu DUY NHẤT của tab Hồ sơ (user chốt
+    /// 2026-10-23: gộp thông tin + ngày sinh + khẩu vị + địa chỉ vào 1
+    /// form, 1 lần bấm). Khẩu vị + ngày sinh cùng nằm trong 1 DTO hồ sơ
+    /// nên chỉ 1 lần gọi UpdateAsync; ngày sinh trống/không đổi thì không
+    /// chặn lưu (server chỉ xét khi ngày THẬT SỰ thay đổi). Panel địa chỉ
+    /// đang mở thì lưu tiếp địa chỉ (service riêng — lời gọi thứ hai,
+    /// lỗi của nó hiện ở vùng _addrError trong mục địa chỉ).
+    /// </summary>
+    private async Task SaveAllAsync()
+    {
+        await RunProfileSaveAsync(
+            setBusy: b => _profileBusy = b,
+            setMessage: (message, isSuccess) => { _profileMsg = message; _profileOk = isSuccess; },
+            work: async () =>
+            {
+                _profile.TasteTags = _selectedTags.ToList();
+                if (_dobValue.HasValue)
+                {
+                    // Chỉ lưu phần ngày (bỏ giờ).
+                    _profile.DateOfBirth = _dobValue.Value.Date;
+                }
+
+                _profile = await CustomerProfileService.UpdateAsync(_profile);
+                _selectedTags = new HashSet<string>(_profile.TasteTags ?? new List<string>());
+                _dobValue = _profile.DateOfBirth;
+            },
+            successMessage: "Đã lưu thay đổi.",
+            errorMessage: "Lưu thay đổi thất bại. Vui lòng thử lại.");
+
+        if (_editing)
+        {
+            await SaveAddressAsync();
+        }
+    }
 
     // Item 92: birthday.
 
@@ -864,30 +924,4 @@
         _ => status,
     };
 
-    /// <summary>
-    /// Lưu ngày sinh (item 92): chỉ lưu phần ngày (bỏ giờ). Nút bị disable khi
-    /// hết lượt đổi trong năm (CanChangeDateOfBirth) — quy định chống gian lận
-    /// quà sinh nhật (đổi ngày sinh để nhận quà nhiều lần).
-    /// </summary>
-    private async Task SaveDobAsync()
-    {
-        if (!_dobValue.HasValue)
-        {
-            _dobMsg = "Vui lòng chọn ngày sinh.";
-            _dobOk = false;
-            return;
-        }
-
-        await RunProfileSaveAsync(
-            setBusy: b => _dobBusy = b,
-            setMessage: (message, isSuccess) => { _dobMsg = message; _dobOk = isSuccess; },
-            work: async () =>
-            {
-                _profile.DateOfBirth = _dobValue.Value.Date;
-                _profile = await CustomerProfileService.UpdateAsync(_profile);
-                _dobValue = _profile.DateOfBirth;
-            },
-            successMessage: "Đã lưu ngày sinh. Chúc bạn luôn ngon miệng!",
-            errorMessage: "Lưu ngày sinh thất bại. Vui lòng thử lại.");
-    }
 }

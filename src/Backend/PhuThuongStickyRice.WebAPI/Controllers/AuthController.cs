@@ -1,4 +1,4 @@
-// Bật nullable annotation context ở cấp file: project chưa bật <Nullable>enable</Nullable>
+﻿// Bật nullable annotation context ở cấp file: project chưa bật <Nullable>enable</Nullable>
 // toàn cục nên compiler sẽ bỏ qua các annotation string?/...? trong file (CS8632)
 // nếu thiếu dòng này. Convention theo RateLimiterPolicies/DefaultRateLimiterPolicy.cs.
 // (Bật nullable có thể lộ thêm warning nullable tiềm ẩn trong file — chỉ là warning,
@@ -99,7 +99,7 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             if (model == null || string.IsNullOrWhiteSpace(model.UsernameOrEmail)
                 || string.IsNullOrWhiteSpace(model.Password))
             {
-                return BadRequest("Username/email and password are required.");
+                return BadRequest(new { message = "Vui lòng nhập tên đăng nhập và mật khẩu." });
             }
 
             var clientIp = HttpContext.Connection.RemoteIpAddress?.ToString() ?? string.Empty;
@@ -111,21 +111,21 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             {
                 // Item 99: every login attempt is audited.
                 await _loginAudits.RecordAsync(login, clientIp, false, "Không tìm thấy tài khoản.");
-                return Unauthorized("Invalid username/email or password.");
+                return Unauthorized(new { message = "Thông tin đăng nhập không đúng. Vui lòng kiểm tra lại rồi thử lại." });
             }
 
             if (await _userManager.IsLockedOutAsync(user))
             {
                 await _loginAudits.RecordAsync(user.UserName, clientIp, false, "Tài khoản tạm khóa.");
                 // Item 100: Vietnamese lockout message.
-                return StatusCode(AccountLockedStatusCode, "Tài khoản tạm khóa. Vui lòng thử lại sau.");
+                return StatusCode(AccountLockedStatusCode, new { message = "Tài khoản tạm khóa. Vui lòng thử lại sau." });
             }
 
             if (!await _userManager.CheckPasswordAsync(user, model.Password))
             {
                 await _userManager.AccessFailedAsync(user);
                 await _loginAudits.RecordAsync(user.UserName, clientIp, false, "Sai mật khẩu.");
-                return Unauthorized("Invalid username/email or password.");
+                return Unauthorized(new { message = "Thông tin đăng nhập không đúng. Vui lòng kiểm tra lại rồi thử lại." });
             }
 
             await _userManager.ResetAccessFailedCountAsync(user);
@@ -160,24 +160,24 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
         {
             if (model == null)
             {
-                return BadRequest("Thông tin đăng ký không hợp lệ.");
+                return BadRequest(new { message = "Thông tin đăng ký không hợp lệ." });
             }
 
             var phone = (model.Phone ?? string.Empty).Trim();
             if (!PhoneNumber.IsValidVn(phone))
             {
-                return BadRequest(InvalidVnPhoneMessage);
+                return BadRequest(new { message = InvalidVnPhoneMessage });
             }
 
             if (string.IsNullOrWhiteSpace(model.Password) || model.Password.Length < MinPasswordLength)
             {
-                return BadRequest("Mật khẩu phải có ít nhất 6 ký tự.");
+                return BadRequest(new { message = "Mật khẩu phải có ít nhất 6 ký tự." });
             }
 
             var existing = await _userManager.FindByNameAsync(phone);
             if (existing != null)
             {
-                return Conflict("Số điện thoại này đã được đăng ký. Vui lòng đăng nhập.");
+                return Conflict(new { message = "Số điện thoại này đã được đăng ký. Vui lòng đăng nhập." });
             }
 
             // [codequality-smell 2026-10-19] Dựng entity User tách ra method
@@ -187,7 +187,7 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             var result = await _userManager.CreateAsync(user, model.Password);
             if (!result.Succeeded)
             {
-                return BadRequest(string.Join("; ", result.Errors.Select(e => e.Description)));
+                return BadRequest(new { message = string.Join("; ", result.Errors.Select(e => e.Description)) });
             }
 
             await EnsureCustomerRoleAsync(user.Id, cancellationToken);
@@ -257,32 +257,32 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             if (model == null || string.IsNullOrWhiteSpace(model.TwoFactorToken)
                 || string.IsNullOrWhiteSpace(model.Code))
             {
-                return BadRequest("Two-factor token and code are required.");
+                return BadRequest(new { message = "Vui lòng nhập mã xác thực 2 bước." });
             }
 
             var userId = _jwtTokenService.ValidateTwoFactorToken(model.TwoFactorToken);
             if (!userId.HasValue)
             {
-                return Unauthorized("Mã đăng nhập 2 bước đã hết hạn. Vui lòng đăng nhập lại.");
+                return Unauthorized(new { message = "Mã đăng nhập 2 bước đã hết hạn. Vui lòng đăng nhập lại." });
             }
 
             var clientIp = HttpContext.Connection.RemoteIpAddress?.ToString() ?? string.Empty;
             var user = await _userManager.FindByIdAsync(userId.Value.ToString());
             if (user == null)
             {
-                return Unauthorized("Invalid two-factor token.");
+                return Unauthorized(new { message = "Mã đăng nhập 2 bước không hợp lệ. Vui lòng đăng nhập lại." });
             }
 
             if (await _userManager.IsLockedOutAsync(user))
             {
-                return StatusCode(AccountLockedStatusCode, "Tài khoản tạm khóa. Vui lòng thử lại sau.");
+                return StatusCode(AccountLockedStatusCode, new { message = "Tài khoản tạm khóa. Vui lòng thử lại sau." });
             }
 
             if (!await _twoFactor.VerifyCodeAsync(user.Id, model.Code))
             {
                 await _userManager.AccessFailedAsync(user);
                 await _loginAudits.RecordAsync(user.UserName, clientIp, false, "Sai mã 2FA.");
-                return Unauthorized("Mã xác thực 2FA không đúng.");
+                return Unauthorized(new { message = "Mã xác thực 2FA không đúng." });
             }
 
             await _userManager.ResetAccessFailedCountAsync(user);
@@ -336,24 +336,24 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             {
                 var setName = await _userManager.SetUserNameAsync(user, model.UserName.Trim());
                 if (!setName.Succeeded)
-                    return BadRequest(string.Join("; ", setName.Errors.Select(e => e.Description)));
+                    return BadRequest(new { message = string.Join("; ", setName.Errors.Select(e => e.Description)) });
             }
 
             if (!string.IsNullOrWhiteSpace(model.Email) && model.Email.Trim() != user.Email)
             {
                 var setEmail = await _userManager.SetEmailAsync(user, model.Email.Trim());
                 if (!setEmail.Succeeded)
-                    return BadRequest(string.Join("; ", setEmail.Errors.Select(e => e.Description)));
+                    return BadRequest(new { message = string.Join("; ", setEmail.Errors.Select(e => e.Description)) });
             }
 
             if (!string.IsNullOrWhiteSpace(model.PhoneNumber))
             {
                 var phone = model.PhoneNumber.Trim();
                 if (!PhoneNumber.IsValidVn(phone))
-                    return BadRequest(InvalidVnPhoneMessage);
+                    return BadRequest(new { message = InvalidVnPhoneMessage });
                 var setPhone = await _userManager.SetPhoneNumberAsync(user, phone);
                 if (!setPhone.Succeeded)
-                    return BadRequest(string.Join("; ", setPhone.Errors.Select(e => e.Description)));
+                    return BadRequest(new { message = string.Join("; ", setPhone.Errors.Select(e => e.Description)) });
             }
 
             return Ok(new { message = "Đã cập nhật." });
@@ -418,7 +418,7 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             if (model == null || string.IsNullOrWhiteSpace(model.CurrentPassword)
                 || string.IsNullOrWhiteSpace(model.NewPassword))
             {
-                return BadRequest("Current password and new password are required.");
+                return BadRequest(new { message = "Vui lòng nhập mật khẩu hiện tại và mật khẩu mới." });
             }
 
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)
@@ -437,10 +437,10 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             var result = await _userManager.ChangePasswordAsync(user, model.CurrentPassword, model.NewPassword);
             if (!result.Succeeded)
             {
-                return BadRequest(string.Join("; ", result.Errors.Select(e => e.Description)));
+                return BadRequest(new { message = string.Join("; ", result.Errors.Select(e => e.Description)) });
             }
 
-            return Ok(new { message = "Password changed." });
+            return Ok(new { message = "Đổi mật khẩu thành công." });
         }
 
         /// <summary>
@@ -472,7 +472,7 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
 
             if (!result.Succeeded)
             {
-                return BadRequest(result.ErrorMessage);
+                return BadRequest(new { message = result.ErrorMessage });
             }
 
             return Ok(new { message = "Đặt lại mật khẩu thành công. Vui lòng đăng nhập lại." });
@@ -613,10 +613,10 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
     /// </summary>
     public sealed class LoginRequestModel
     {
-        [Required]
+        [Required(ErrorMessage = "Vui lòng nhập tên đăng nhập.")]
         public required string UsernameOrEmail { get; set; }
 
-        [Required]
+        [Required(ErrorMessage = "Vui lòng nhập mật khẩu.")]
         public required string Password { get; set; }
     }
 
@@ -625,10 +625,10 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
     /// </summary>
     public sealed class CustomerRegisterRequestModel
     {
-        [Required]
+        [Required(ErrorMessage = "Vui lòng nhập số điện thoại.")]
         public required string Phone { get; set; }
 
-        [Required]
+        [Required(ErrorMessage = "Vui lòng nhập mật khẩu.")]
         public required string Password { get; set; }
 
         public string? FullName { get; set; }
@@ -641,10 +641,10 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
     /// </summary>
     public sealed class ChangePasswordRequestModel
     {
-        [Required]
+        [Required(ErrorMessage = "Vui lòng nhập mật khẩu hiện tại.")]
         public required string CurrentPassword { get; set; }
 
-        [Required]
+        [Required(ErrorMessage = "Vui lòng nhập mật khẩu mới.")]
         public required string NewPassword { get; set; }
     }
 
@@ -653,7 +653,7 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
     /// </summary>
     public sealed class ForgotPasswordRequestModel
     {
-        [Required]
+        [Required(ErrorMessage = "Vui lòng nhập số điện thoại.")]
         public required string Phone { get; set; }
     }
 
@@ -662,13 +662,13 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
     /// </summary>
     public sealed class ForgotPasswordResetModel
     {
-        [Required]
+        [Required(ErrorMessage = "Vui lòng nhập số điện thoại.")]
         public required string Phone { get; set; }
 
-        [Required]
+        [Required(ErrorMessage = "Vui lòng nhập mã OTP.")]
         public required string Otp { get; set; }
 
-        [Required]
+        [Required(ErrorMessage = "Vui lòng nhập mật khẩu mới.")]
         public required string NewPassword { get; set; }
     }
 
@@ -677,10 +677,10 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
     /// </summary>
     public sealed class VerifyTwoFactorRequestModel
     {
-        [Required]
+        [Required(ErrorMessage = "Thiếu mã đăng nhập 2 bước. Vui lòng đăng nhập lại.")]
         public required string TwoFactorToken { get; set; }
 
-        [Required]
+        [Required(ErrorMessage = "Vui lòng nhập mã xác thực.")]
         public required string Code { get; set; }
     }
 
@@ -691,7 +691,7 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
     {
         // Bug-hunt 2026-10-19: bỏ trường Secret — secret cài đặt do server sinh
         // và giữ trong cache chờ xác thực, client chỉ gửi mã 6 số.
-        [Required]
+        [Required(ErrorMessage = "Vui lòng nhập mã xác thực.")]
         public required string Code { get; set; }
     }
 
@@ -700,7 +700,7 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
     /// </summary>
     public sealed class DisableTwoFactorRequestModel
     {
-        [Required]
+        [Required(ErrorMessage = "Vui lòng nhập mã xác thực.")]
         public required string Code { get; set; }
     }
 

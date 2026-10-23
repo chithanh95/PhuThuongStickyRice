@@ -39,8 +39,28 @@
                 <a href="/" class="@NavActive("/")" aria-current="@(NavActive("/") == "active" ? "page" : null)">@AppLocalizationService.Translate("nav.home")</a>
                 <a href="/shop" class="@NavActive("/shop")" aria-current="@(NavActive("/shop") == "active" ? "page" : null)">@AppLocalizationService.Translate("nav.menu")</a>
                 <a href="/dat-so-luong-lon" class="@NavActive("/dat-so-luong-lon")" aria-current="@(NavActive("/dat-so-luong-lon") == "active" ? "page" : null)">@AppLocalizationService.Translate("nav.bulk_order")</a>
+                <a href="/track-order" class="@NavActive("/track-order")" aria-current="@(NavActive("/track-order") == "active" ? "page" : null)">@AppLocalizationService.Translate("nav.track_order")</a>
                 <a href="#lien-he" class="">@AppLocalizationService.Translate("nav.contact")</a>
-                <a href="/dang-nhap" class="shp-nav-login">👤 @AppLocalizationService.Translate("common.login")</a>
+                @* Mục tài khoản trong nav: trước đây để CỨNG link Đăng nhập nên
+                   khách đã đăng nhập vẫn thấy "Đăng nhập" trong menu mobile
+                   (user báo 2026-10-23). Nay theo trạng thái đăng nhập giống
+                   cụm tài khoản ở header-right: nhân viên → trang quản trị,
+                   khách → trang tài khoản, chưa đăng nhập → Đăng nhập. *@
+                <AuthorizeView>
+                    <Authorized>
+                        @if (context.User.IsInRole("Admin") || context.User.IsInRole("Cashier") || context.User.IsInRole("Kitchen"))
+                        {
+                            <a href="/dashboard" class="shp-nav-login">🛠️ Vào trang quản trị</a>
+                        }
+                        else
+                        {
+                            <a href="/tai-khoan" class="shp-nav-login">👤 Tài khoản của tôi</a>
+                        }
+                    </Authorized>
+                    <NotAuthorized>
+                        <a href="/dang-nhap" class="shp-nav-login">👤 @AppLocalizationService.Translate("common.login")</a>
+                    </NotAuthorized>
+                </AuthorizeView>
             </nav>
 
             <div class="shp-header-right">
@@ -48,8 +68,12 @@
                 <LanguageSelector Compact="true" />
                 @if (!string.IsNullOrEmpty(_hotline))
                 {
-                    <a class="shp-hotline" href="tel:@_hotline" title="Gọi cho quán">
-                        📞 <span class="shp-hotline-num">@_hotline</span>
+                    @* Chỉ còn icon gọi: số điện thoại đã bỏ khỏi header vì menu
+                       đã có mục Liên hệ (xuống chân trang có số đầy đủ) và
+                       header quá chật (user chốt 2026-10-23). Số vẫn hiện ở
+                       chân trang + trang landing. *@
+                    <a class="shp-hotline" href="tel:@_hotline" title="Gọi cho quán" aria-label="Gọi cho quán">
+                        📞
                     </a>
                 }
                 <a class="shp-cart" href="/cart" title="@AppLocalizationService.Translate("common.cart")"
@@ -75,25 +99,40 @@
                 <button type="button" class="shp-theme-toggle" @onclick="ToggleTheme" title="@_themeTitle" aria-label="@_themeTitle">
                     @_themeIcon
                 </button>
-                <a class="shp-order-btn" href="/cart">@AppLocalizationService.Translate("shop.order_now")</a>
+                @* ĐÃ BỎ nút "Đặt hàng ngay" (user chốt 2026-10-23, tối ưu
+                   header): nó trùng đích /cart với icon giỏ hàng ngay bên
+                   cạnh mà chiếm bề ngang nhiều nhất header. *@
 
+                @* Cụm tài khoản GỌN (user chốt 2026-10-23): trước đây header
+                   trải chữ "👤 Xin chào, 0389124678" + "Đăng xuất" thành 2
+                   dòng dài. Nay 1 nút "👤 Tài khoản ▾" — bấm vào chọn Thông
+                   tin tài khoản hoặc Đăng xuất (nhân viên: Vào trang quản
+                   trị hoặc Đăng xuất). Mobile ẩn cụm này (đã có mục tài
+                   khoản trong menu hamburger). *@
                 <AuthorizeView>
                     <Authorized>
-                        @if (context.User.IsInRole("Admin") || context.User.IsInRole("Cashier") || context.User.IsInRole("Kitchen"))
-                        {
-                            <a class="shp-account shp-admin-link" href="/dashboard" title="Khu vực quản trị">
-                                🛠️ Vào trang quản trị
-                            </a>
-                        }
-                        else
-                        {
-                            <div class="shp-user">
-                                <a class="shp-account" href="/tai-khoan" title="Tài khoản mua hàng của bạn">
-                                    👤 Xin chào, @(context.User.Identity?.Name ?? "bạn")
-                                </a>
-                                <button type="button" class="shp-logout" @onclick="SignOut" title="@AppLocalizationService.Translate("shop.logout")">@AppLocalizationService.Translate("shop.logout")</button>
-                            </div>
-                        }
+                        <div class="shp-user-menu">
+                            <button type="button" class="shp-account shp-user-btn" @onclick="ToggleUserMenu"
+                                    aria-haspopup="true" aria-expanded="@_userMenuOpen"
+                                    title="Tài khoản: @(context.User.Identity?.Name)">
+                                @(context.User.IsInRole("Admin") || context.User.IsInRole("Cashier") || context.User.IsInRole("Kitchen") ? "🛠️ Quản trị" : "👤 Tài khoản") <span aria-hidden="true">▾</span>
+                            </button>
+                            @if (_userMenuOpen)
+                            {
+                                <div class="shp-user-backdrop" @onclick="CloseUserMenu"></div>
+                                <div class="shp-user-dropdown" role="menu">
+                                    @if (context.User.IsInRole("Admin") || context.User.IsInRole("Cashier") || context.User.IsInRole("Kitchen"))
+                                    {
+                                        <a href="/dashboard" role="menuitem" @onclick="CloseUserMenu">🛠️ Vào trang quản trị</a>
+                                    }
+                                    else
+                                    {
+                                        <a href="/tai-khoan" role="menuitem" @onclick="CloseUserMenu">👤 Thông tin tài khoản</a>
+                                    }
+                                    <button type="button" role="menuitem" @onclick="SignOutFromMenu">🚪 @AppLocalizationService.Translate("shop.logout")</button>
+                                </div>
+                            }
+                        </div>
                     </Authorized>
                     <NotAuthorized>
                         <a class="shp-account" href="/dang-nhap" title="Đăng nhập / đăng ký tài khoản mua hàng">
@@ -137,7 +176,10 @@
                 {
                     <p>✉️ @_email</p>
                 }
-                <a class="shp-admin-login" href="/login">🔐 Đăng nhập quản trị</a>
+                @* ĐÃ BỎ link "Đăng nhập quản trị" khỏi footer khách (đội UI/UX
+                   rà 2026-10-23): khách không cần thấy cửa vào quản trị;
+                   nhân viên đã đăng nhập có sẵn mục Quản trị trên header,
+                   chưa đăng nhập thì gõ thẳng /login. *@
             </div>
         </div>
         <div class="shp-copyright">&copy; 2026 Xôi Huyền. All rights reserved.</div>
@@ -146,6 +188,22 @@
 
 @code {
     private bool _menuOpen;
+    // Menu xổ xuống của nút Tài khoản trên header (Thông tin tài khoản /
+    // Đăng xuất) — thay cụm chữ "Xin chào, ..." + link Đăng xuất trải dài.
+    private bool _userMenuOpen;
+
+    /// <summary>Mở/đóng menu tài khoản trên header.</summary>
+    private void ToggleUserMenu() => _userMenuOpen = !_userMenuOpen;
+
+    /// <summary>Đóng menu tài khoản (bấm ra ngoài hoặc chọn 1 mục).</summary>
+    private void CloseUserMenu() => _userMenuOpen = false;
+
+    /// <summary>Đăng xuất từ menu tài khoản: đóng menu trước rồi đăng xuất.</summary>
+    private async Task SignOutFromMenu()
+    {
+        _userMenuOpen = false;
+        await SignOut();
+    }
     private string _hotline;
     private string _address;
     private string _email;

@@ -163,7 +163,7 @@ namespace PhuThuongStickyRice.Web.Components.Shop.Services
                 ["en"] = new Dictionary<string, string>
                 {
                     ["shop_title"] = "Order sticky rice",
-                    ["shop_subtitle"] = "Phú Thượng sticky rice — fresh every morning",
+                    ["shop_subtitle"] = "Xôi Huyền sticky rice — fresh every morning",
                     ["add_to_cart"] = "Add to cart",
                     ["cart"] = "Cart",
                     ["cart_empty"] = "Your cart is empty.",
@@ -208,7 +208,7 @@ namespace PhuThuongStickyRice.Web.Components.Shop.Services
                 ["zh"] = new Dictionary<string, string>
                 {
                     ["shop_title"] = "订糯米饭",
-                    ["shop_subtitle"] = "富上糯米饭——每日清晨软糯飘香",
+                    ["shop_subtitle"] = "Xôi Huyền糯米饭——每日清晨软糯飘香",
                     ["add_to_cart"] = "加入购物车",
                     ["cart"] = "购物车",
                     ["cart_empty"] = "购物车是空的。",
@@ -253,7 +253,7 @@ namespace PhuThuongStickyRice.Web.Components.Shop.Services
                 ["ja"] = new Dictionary<string, string>
                 {
                     ["shop_title"] = "もち米ごはんを注文",
-                    ["shop_subtitle"] = "フートゥオンのもち米ごはん — 毎朝もちもち",
+                    ["shop_subtitle"] = "Xôi Huyềnのもち米ごはん — 毎朝もちもち",
                     ["add_to_cart"] = "カートに追加",
                     ["cart"] = "カート",
                     ["cart_empty"] = "カートは空です。",

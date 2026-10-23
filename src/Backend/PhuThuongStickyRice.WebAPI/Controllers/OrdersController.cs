@@ -157,7 +157,7 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
                 Source = model.Source,
                 // "lines": null trong body sẽ ghi đè initializer thành null —
                 // không guard sẽ NRE 500 tại .Select; để service trả 400 chuẩn
-                // (CreateAsync ném DomainException "Order must contain at least one line.").
+                // (CreateAsync ném DomainException "Đơn hàng phải có ít nhất 1 món.").
                 Lines = (model.Lines ?? [])
                     .Select(x => new CreateOrderLineDto
                     {

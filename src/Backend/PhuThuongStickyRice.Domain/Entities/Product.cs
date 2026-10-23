@@ -1,4 +1,4 @@
-using PhuThuongStickyRice.Domain.Exceptions;
+﻿using PhuThuongStickyRice.Domain.Exceptions;
 using PhuThuongStickyRice.Domain.ValueObjects;
 using System;
 using System.Collections.Generic;
@@ -171,12 +171,12 @@ namespace PhuThuongStickyRice.Domain.Entities
         {
             if (code == null)
             {
-                throw new DomainException("Product code is required.");
+                throw new DomainException("Thiếu mã món.");
             }
 
             if (string.IsNullOrWhiteSpace(name))
             {
-                throw new DomainException("Product name must not be empty.");
+                throw new DomainException("Tên món không được để trống.");
             }
 
             if (name.Trim().Length > NameMaxLength)
@@ -186,7 +186,7 @@ namespace PhuThuongStickyRice.Domain.Entities
 
             if (price == null)
             {
-                throw new DomainException("Product price is required.");
+                throw new DomainException("Thiếu giá món.");
             }
 
             if (description != null && description.Length > DescriptionMaxLength)
@@ -206,12 +206,12 @@ namespace PhuThuongStickyRice.Domain.Entities
         {
             if (Status == ProductStatus.Discontinued)
             {
-                throw new DomainException("Cannot update a discontinued product.");
+                throw new DomainException("Không thể sửa món đã ngừng bán.");
             }
 
             if (string.IsNullOrWhiteSpace(name))
             {
-                throw new DomainException("Product name must not be empty.");
+                throw new DomainException("Tên món không được để trống.");
             }
 
             if (name.Trim().Length > NameMaxLength)
@@ -238,12 +238,12 @@ namespace PhuThuongStickyRice.Domain.Entities
         {
             if (newPrice == null)
             {
-                throw new DomainException("Product price is required.");
+                throw new DomainException("Thiếu giá món.");
             }
 
             if (Status == ProductStatus.Discontinued)
             {
-                throw new DomainException("Cannot change the price of a discontinued product.");
+                throw new DomainException("Không thể đổi giá của món đã ngừng bán.");
             }
 
             Price = newPrice;
@@ -254,7 +254,7 @@ namespace PhuThuongStickyRice.Domain.Entities
         {
             if (costPrice < 0)
             {
-                throw new DomainException("Cost price must not be negative.");
+                throw new DomainException("Giá vốn không được âm.");
             }
 
             CostPrice = costPrice;
@@ -304,7 +304,7 @@ namespace PhuThuongStickyRice.Domain.Entities
 
             if (normalized != UnitPortion && normalized != UnitKg)
             {
-                throw new DomainException("Unit must be 'suất' or 'kg'.");
+                throw new DomainException("Đơn vị tính phải là 'suất' hoặc 'kg'.");
             }
 
             Unit = normalized;
@@ -317,7 +317,7 @@ namespace PhuThuongStickyRice.Domain.Entities
         {
             if (sortOrder < 0)
             {
-                throw new DomainException("Sort order must not be negative.");
+                throw new DomainException("Thứ tự sắp xếp không được âm.");
             }
 
             SortOrder = sortOrder;
@@ -521,7 +521,7 @@ namespace PhuThuongStickyRice.Domain.Entities
         {
             if (Status == ProductStatus.Discontinued)
             {
-                throw new DomainException("A discontinued product cannot be re-activated.");
+                throw new DomainException("Món đã ngừng bán, không thể mở bán lại.");
             }
 
             Status = ProductStatus.Active;
@@ -536,7 +536,7 @@ namespace PhuThuongStickyRice.Domain.Entities
         {
             if (Status == ProductStatus.Discontinued)
             {
-                throw new DomainException("Product is already discontinued.");
+                throw new DomainException("Món này đã ngừng bán.");
             }
 
             Status = ProductStatus.Inactive;
@@ -566,7 +566,7 @@ namespace PhuThuongStickyRice.Domain.Entities
         {
             if (Status == ProductStatus.Discontinued)
             {
-                throw new DomainException("Cannot update a discontinued product.");
+                throw new DomainException("Không thể sửa món đã ngừng bán.");
             }
 
             var normalizedTags = NormalizeTags(tags);
@@ -587,7 +587,7 @@ namespace PhuThuongStickyRice.Domain.Entities
 
             if (availableFrom.HasValue && availableTo.HasValue && availableFrom.Value.Date > availableTo.Value.Date)
             {
-                throw new DomainException("AvailableFrom must not be after AvailableTo.");
+                throw new DomainException("Giờ bắt đầu bán không được sau giờ kết thúc.");
             }
 
             Tags = normalizedTags;

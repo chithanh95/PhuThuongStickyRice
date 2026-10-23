@@ -239,7 +239,32 @@ namespace PhuThuongStickyRice.Web.Components.Shop.Services
         internal static string ExtractJsonMessage(string body)
         {
             var trimmed = body?.Trim();
-            if (string.IsNullOrEmpty(trimmed) || !trimmed.StartsWith('{'))
+            if (string.IsNullOrEmpty(trimmed))
+            {
+                return null;
+            }
+
+            // Body là JSON string thuần (server trả BadRequest("...") dạng
+            // chuỗi): phải giải mã lấy đúng câu chữ. Trước đây nhánh này trả
+            // null, caller rơi xuống fallback dùng NGUYÊN VĂN body nên khách
+            // thấy cả dấu ngoặc kép bao quanh thông báo lỗi và lỗi tiếng Anh
+            // của Identity (user báo 2026-10-23 ở màn hình đăng nhập).
+            if (trimmed.StartsWith('"'))
+            {
+                try
+                {
+                    using var stringDoc = JsonDocument.Parse(trimmed);
+                    return stringDoc.RootElement.ValueKind == JsonValueKind.String
+                        ? stringDoc.RootElement.GetString()
+                        : null;
+                }
+                catch (JsonException)
+                {
+                    return null;
+                }
+            }
+
+            if (!trimmed.StartsWith('{'))
             {
                 return null;
             }

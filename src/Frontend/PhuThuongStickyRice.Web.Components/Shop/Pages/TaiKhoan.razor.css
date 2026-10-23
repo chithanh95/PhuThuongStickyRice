@@ -14,6 +14,113 @@
 
 .tk-form-narrow { max-width: 420px; }
 
+/* ---------- 2026-10-23: 3 tab + FORM GỘP + hàng chỉ số hạng ---------- */
+/* Tab theo mẫu tab gạch chân của trang Đăng nhập (DangNhap) nhưng màu
+   active dùng đỏ đô #763434 của palette shop thay cho tím Lexa. */
+.tk-tabs {
+    display: flex;
+    gap: 4px;
+    border-bottom: 2px solid #e8ddd0;
+    margin-bottom: 20px;
+}
+
+.tk-tab {
+    flex: 1;
+    min-height: 48px;
+    background: none;
+    border: none;
+    border-bottom: 3px solid transparent;
+    margin-bottom: -2px;
+    font-family: inherit;
+    font-size: 1rem;
+    font-weight: 600;
+    color: #6c757d;
+    cursor: pointer;
+    padding: 10px 4px;
+}
+
+.tk-tab.active {
+    color: #763434;
+    border-bottom-color: #763434;
+}
+
+html.dark .tk-tabs { border-bottom-color: #3a3226; }
+
+html.dark .tk-tab.active {
+    color: #f0d9b5;
+    border-bottom-color: #f0d9b5;
+}
+
+/* Các mục con trong form gộp (thông tin/ngày sinh/khẩu vị/địa chỉ) ngăn
+   nhau bằng đường kẻ mảnh, nhịp 16px thống nhất với các card khác. */
+.tk-form-section {
+    padding: 16px 0;
+    border-top: 1px solid #eee;
+}
+
+.tk-form-section:first-of-type {
+    border-top: none;
+    padding-top: 4px;
+}
+
+html.dark .tk-form-section { border-top-color: #3a3226; }
+
+.tk-section-title {
+    font-size: 1.05rem;
+    font-weight: 700;
+    margin-bottom: 12px;
+}
+
+/* 3 chỉ số hạng thành viên: hàng flex nhãn trái — số phải, KHÔNG dùng
+   .row/.col-4 của Bootstrap nữa (margin âm của .row làm số thò ra sát
+   mép card khi CSS mobile xếp lại cột — user báo 2026-10-23). Số kết
+   thúc đúng mép padding của card-body ở mọi bề rộng. */
+.tk-stat-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 16px;
+    padding: 10px 0;
+    border-top: 1px solid #eee;
+}
+
+.tk-stat-row:first-child {
+    border-top: none;
+    padding-top: 2px;
+}
+
+.tk-stat-label {
+    color: #6c757d;
+    font-size: 15px;
+}
+
+.tk-stat-value {
+    font-size: 1.25rem;
+    font-weight: 700;
+    text-align: right;
+    min-width: 0;
+    overflow-wrap: anywhere; /* số tiền rất lớn xuống dòng trong cột số, không tràn */
+}
+
+html.dark .tk-stat-row { border-top-color: #3a3226; }
+
+/* Cụm thêm khẩu vị: ô nhập + nút "Thêm" phải CAO BẰNG NHAU (48px).
+   Trước đây nút bị ép 48px (chế độ chữ lớn A+ + rule mobile của
+   .input-group-append .btn) trong khi ô nhập chỉ 44px và .form-control
+   có height cố định nên flex của .input-group không kéo giãn được —
+   nút thò cao hơn ô (user báo 2026-10-23). */
+.tk-tag-add .form-control {
+    height: auto;
+    min-height: 48px;
+}
+
+.tk-tag-add .input-group-append .btn {
+    height: 100%;
+    min-height: 48px;
+    display: inline-flex;
+    align-items: center;
+}
+
 .tk-addr-panel { background: #FFFDF7; }
 
 /* ---------- DARK MODE (html.dark) — trang tài khoản ---------- */
@@ -156,17 +263,15 @@ html.dark .tk-addr-panel {
    checkbox/radio khác trên web (checkout "Nhớ tôi", form-check) đã lên
    20px. Đồng bộ: 20px trên mobile, dễ bấm với người lớn tuổi. */
 @media (max-width: 767.98px) {
-    .tk-page .row.text-center .col-4 small {
-        font-size: 13px;
-    }
-    .tk-page .row.text-center + small.text-muted {
+    /* 2026-10-23: 3 chỉ số hạng nay là .tk-stat-row (nhãn 15px sẵn, số có
+       overflow-wrap) — chỉ còn giữ rule chữ ghi chú hạng 13px trên mobile. */
+    .tk-page .tk-stats + small.text-muted {
         font-size: 13px;
         line-height: 1.55;
     }
-    .tk-page .row.text-center .col-4 .h5 {
-        word-break: break-word; /* số tiền lớn không tràn cột ở màn 320px */
-    }
-    .tk-page .form-row .form-group > small.text-muted {
+    /* Trước đây selector là .form-row (card Sinh nhật cũ); form gộp dùng
+       .tk-form-section nên trỏ lại vào đây để ghi chú ngày sinh vẫn 13px. */
+    .tk-page .tk-form-section .form-group > small.text-muted {
         font-size: 13px;
     }
     .tk-page .card-body > .border.rounded.p-3.mb-2 > .d-flex.justify-content-between.align-items-center > .text-right small {

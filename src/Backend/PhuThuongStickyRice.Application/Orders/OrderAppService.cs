@@ -471,7 +471,7 @@ namespace PhuThuongStickyRice.Application.Orders
         {
             if (input.Lines == null || input.Lines.Count == 0)
             {
-                throw new Domain.Exceptions.DomainException("Order must contain at least one line.");
+                throw new Domain.Exceptions.DomainException("Đơn hàng phải có ít nhất 1 món.");
             }
 
             // Wave 6b (item 30): pause toggle + open-hours gating. Checked
@@ -641,7 +641,7 @@ namespace PhuThuongStickyRice.Application.Orders
                     || !Enum.IsDefined<PaymentMethod>(paymentMethod))
                 && !string.IsNullOrWhiteSpace(input.PaymentMethod))
             {
-                throw new Domain.Exceptions.DomainException($"Unknown payment method '{input.PaymentMethod}'.");
+                throw new Domain.Exceptions.DomainException($"Phương thức thanh toán '{input.PaymentMethod}' không hợp lệ.");
             }
 
             // Item 50: pay-later requires at least 5 completed orders from this phone.
@@ -1148,7 +1148,7 @@ namespace PhuThuongStickyRice.Application.Orders
 
             if (product.Status != ProductStatus.Active)
             {
-                throw new Domain.Exceptions.DomainException($"Product '{product.Name}' is not available for ordering.");
+                throw new Domain.Exceptions.DomainException($"Món '{product.Name}' hiện không bán.");
             }
 
             // Item 164: sale time windows (and seasonal window), evaluated
@@ -1169,7 +1169,7 @@ namespace PhuThuongStickyRice.Application.Orders
                 if (sizeOption == null || !sizeOption.IsActive || sizeOption.ProductId != product.Id)
                 {
                     throw new Domain.Exceptions.DomainException(
-                        $"Size option for '{product.Name}' is not available.");
+                        $"Kích cỡ này của món '{product.Name}' hiện không khả dụng.");
                 }
 
                 sizeName = sizeOption.Name;
@@ -3925,7 +3925,7 @@ namespace PhuThuongStickyRice.Application.Orders
                 }
             }
 
-            throw new Domain.Exceptions.DomainException("Could not generate a unique order number. Please try again.");
+            throw new Domain.Exceptions.DomainException("Không tạo được mã đơn duy nhất. Vui lòng thử lại.");
         }
 
         /// <summary>

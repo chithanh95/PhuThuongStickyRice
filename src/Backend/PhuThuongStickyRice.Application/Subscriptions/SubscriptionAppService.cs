@@ -349,7 +349,7 @@ namespace PhuThuongStickyRice.Application.Subscriptions
                 RegenerateCollidingNumbers(numbers, used, existing, day);
             }
 
-            throw new Domain.Exceptions.DomainException("Could not generate a unique order number.");
+            throw new Domain.Exceptions.DomainException("Không tạo được mã đơn duy nhất. Vui lòng thử lại.");
         }
 
         /// <summary>Sinh <paramref name="count"/> mã ứng viên, đảm bảo không trùng nhau trong batch.</summary>

@@ -287,6 +287,9 @@
 
 .sg-theme-toggle:hover { border-color: var(--sg-accent); }
 
+/* Chữ "A+" trong nút chữ lớn ở header landing (thêm 2026-10-23 cùng nút A+). */
+.sg-text-size-icon { font-size: 14px; font-weight: 800; line-height: 1; }
+
 .sg-account {
     font-size: 14px;
     font-weight: 700;

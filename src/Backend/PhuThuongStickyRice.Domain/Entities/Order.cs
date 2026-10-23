@@ -1,4 +1,4 @@
-#nullable enable annotations
+﻿#nullable enable annotations
 using PhuThuongStickyRice.Domain.Exceptions;
 using PhuThuongStickyRice.Domain.ValueObjects;
 using System;
@@ -619,16 +619,16 @@ namespace PhuThuongStickyRice.Domain.Entities
             // [codequality-smell 2026-10-20] Các kiểm tra text rỗng/độ dài
             // gom về TextValidation dùng chung với OrderLine — logic và
             // thông điệp lỗi giữ nguyên từng trường hợp.
-            TextValidation.RequireMaxLength(orderNumber, OrderNumberMaxLength, "Order number", "Order number is required.");
-            TextValidation.RequireMaxLength(customerName, CustomerNameMaxLength, "Customer name", "Customer name must not be empty.");
-            TextValidation.RequireMaxLength(customerPhone, CustomerPhoneMaxLength, "Customer phone", "Customer phone must not be empty.");
+            TextValidation.RequireMaxLength(orderNumber, OrderNumberMaxLength, "Mã đơn hàng", "Thiếu mã đơn hàng.");
+            TextValidation.RequireMaxLength(customerName, CustomerNameMaxLength, "Họ tên khách hàng", "Họ tên khách hàng không được để trống.");
+            TextValidation.RequireMaxLength(customerPhone, CustomerPhoneMaxLength, "Số điện thoại khách hàng", "Số điện thoại khách hàng không được để trống.");
 
             if (!string.IsNullOrWhiteSpace(customerEmail))
             {
                 var email = customerEmail.Trim();
                 if (email.Length > CustomerEmailMaxLength || !IsValidEmail(email))
                 {
-                    throw new DomainException("Customer email is not a valid email address.");
+                    throw new DomainException("Email khách hàng không đúng định dạng.");
                 }
             }
 
@@ -637,12 +637,12 @@ namespace PhuThuongStickyRice.Domain.Entities
 
             if (!isPickup && string.IsNullOrWhiteSpace(customerAddress))
             {
-                throw new DomainException("Customer address must not be empty.");
+                throw new DomainException("Địa chỉ khách hàng không được để trống.");
             }
 
-            TextValidation.MaxLength(customerAddress, CustomerAddressMaxLength, "Customer address");
-            TextValidation.MaxLength(notes, NotesMaxLength, "Order notes", trimBeforeCheck: false);
-            TextValidation.MaxLength(deliverySlot, DeliverySlotMaxLength, "Delivery slot");
+            TextValidation.MaxLength(customerAddress, CustomerAddressMaxLength, "Địa chỉ khách hàng");
+            TextValidation.MaxLength(notes, NotesMaxLength, "Ghi chú đơn hàng", trimBeforeCheck: false);
+            TextValidation.MaxLength(deliverySlot, DeliverySlotMaxLength, "Khung giờ nhận hàng");
         }
 
         /// <summary>
@@ -663,13 +663,13 @@ namespace PhuThuongStickyRice.Domain.Entities
 
             if (orderLines.Count == 0)
             {
-                throw new DomainException("Order must contain at least one line.");
+                throw new DomainException("Đơn hàng phải có ít nhất 1 món.");
             }
 
             var currency = orderLines.First().UnitPrice.Currency;
             if (orderLines.Any(x => x.UnitPrice.Currency != currency))
             {
-                throw new DomainException("All order lines must use the same currency.");
+                throw new DomainException("Tất cả món trong đơn phải dùng cùng một loại tiền tệ.");
             }
 
             return orderLines;
@@ -1055,12 +1055,12 @@ namespace PhuThuongStickyRice.Domain.Entities
         {
             if (Status == OrderStatus.Completed)
             {
-                throw new DomainException("A completed order cannot be cancelled.");
+                throw new DomainException("Đơn đã hoàn thành, không thể hủy.");
             }
 
             if (Status == OrderStatus.Cancelled)
             {
-                throw new DomainException("Order is already cancelled.");
+                throw new DomainException("Đơn này đã bị hủy.");
             }
 
             Status = OrderStatus.Cancelled;
@@ -1091,7 +1091,7 @@ namespace PhuThuongStickyRice.Domain.Entities
         {
             if (PaymentMethod != PaymentMethod.BankTransfer)
             {
-                throw new DomainException("Only bank-transfer orders can be marked as transferred.");
+                throw new DomainException("Chỉ đơn chuyển khoản mới được đánh dấu đã chuyển khoản.");
             }
 
             if (PaymentStatus != PaymentStatus.Unpaid)
@@ -1101,7 +1101,7 @@ namespace PhuThuongStickyRice.Domain.Entities
 
             if (Status == OrderStatus.Cancelled)
             {
-                throw new DomainException("Cannot mark payment for a cancelled order.");
+                throw new DomainException("Không thể ghi nhận thanh toán cho đơn đã hủy.");
             }
 
             PaymentStatus = PaymentStatus.PendingConfirmation;
@@ -1117,7 +1117,7 @@ namespace PhuThuongStickyRice.Domain.Entities
         {
             if (PaymentStatus == PaymentStatus.Paid)
             {
-                throw new DomainException("Payment is already confirmed.");
+                throw new DomainException("Thanh toán của đơn này đã được xác nhận.");
             }
 
             if (PaymentStatus != PaymentStatus.Unpaid
@@ -1129,7 +1129,7 @@ namespace PhuThuongStickyRice.Domain.Entities
 
             if (Status == OrderStatus.Cancelled)
             {
-                throw new DomainException("Cannot confirm payment for a cancelled order.");
+                throw new DomainException("Không thể xác nhận thanh toán cho đơn đã hủy.");
             }
 
             PaymentStatus = PaymentStatus.Paid;
@@ -1142,7 +1142,7 @@ namespace PhuThuongStickyRice.Domain.Entities
         {
             if (PaymentStatus == PaymentStatus.Paid)
             {
-                throw new DomainException("A paid order cannot be marked as payment failed.");
+                throw new DomainException("Đơn đã thanh toán, không thể đánh dấu thanh toán thất bại.");
             }
 
             if (PaymentStatus != PaymentStatus.Unpaid && PaymentStatus != PaymentStatus.PendingConfirmation)

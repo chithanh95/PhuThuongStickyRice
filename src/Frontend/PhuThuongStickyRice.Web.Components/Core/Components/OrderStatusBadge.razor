@@ -1,4 +1,4 @@
-<span class="@CssClass">@Status</span>
+<span class="@CssClass">@Text</span>
 
 @code {
     /// <summary>
@@ -7,6 +7,22 @@
     /// </summary>
     [Parameter]
     public string Status { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Nhãn tiếng Việt của trạng thái — trước đây component in nguyên mã
+    /// tiếng Anh ("Pending"/"Completed"...) ra màn hình nhân viên
+    /// (rà soát ngôn ngữ 2026-10-23). Mã lạ giữ nguyên để không mất thông tin.
+    /// </summary>
+    private string Text => Status switch
+    {
+        "Pending" => "Chờ xác nhận",
+        "Confirmed" => "Đã xác nhận",
+        "Preparing" => "Đang chuẩn bị",
+        "Delivering" => "Đang giao",
+        "Completed" => "Hoàn thành",
+        "Cancelled" => "Đã hủy",
+        _ => Status,
+    };
 
     /// <summary>
     /// Badge Lexa tương ứng với trạng thái đơn hàng.

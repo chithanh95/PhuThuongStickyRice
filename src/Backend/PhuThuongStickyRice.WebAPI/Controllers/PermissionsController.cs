@@ -54,7 +54,7 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
         {
             if (input == null || string.IsNullOrWhiteSpace(input.Role))
             {
-                return BadRequest("Role is required.");
+                return BadRequest(new { message = "Vui lòng chọn vai trò." });
             }
 
             try

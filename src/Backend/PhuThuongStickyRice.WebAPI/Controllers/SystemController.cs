@@ -75,7 +75,7 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
         {
             if (model == null || string.IsNullOrWhiteSpace(model.Message))
             {
-                return BadRequest("Message is required.");
+                return BadRequest(new { message = "Vui lòng gửi kèm nội dung lỗi." });
             }
 
             var message = model.Message.Length > 2000

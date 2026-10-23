@@ -128,7 +128,7 @@ namespace PhuThuongStickyRice.Application.Customer
         {
             if (string.IsNullOrWhiteSpace(imageUrl))
             {
-                throw new DomainException("Image is required.");
+                throw new DomainException("Vui lòng chọn ảnh.");
             }
 
             var phone = VietnamTime.NormalizePhone(input?.Phone);

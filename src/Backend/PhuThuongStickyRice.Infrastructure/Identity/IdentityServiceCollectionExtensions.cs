@@ -13,7 +13,10 @@ namespace Microsoft.Extensions.DependencyInjection
         {
             services.AddIdentity<User, Role>()
                     .AddTokenProviders()
-                    .AddPasswordValidators();
+                    .AddPasswordValidators()
+                    // Lỗi Identity sang tiếng Việt (2026-10-23): mặc định
+                    // IdentityErrorDescriber trả tiếng Anh ra form khách.
+                    .AddErrorDescriber<VietnameseIdentityErrorDescriber>();
 
             services.AddTransient<IUserStore<User>, UserStore>();
             services.AddTransient<IRoleStore<Role>, RoleStore>();
@@ -33,7 +36,10 @@ namespace Microsoft.Extensions.DependencyInjection
         {
             services.AddIdentityCore<User>()
                     .AddTokenProviders()
-                    .AddPasswordValidators();
+                    .AddPasswordValidators()
+                    // Lỗi Identity sang tiếng Việt (2026-10-23): mặc định
+                    // IdentityErrorDescriber trả tiếng Anh ra form khách.
+                    .AddErrorDescriber<VietnameseIdentityErrorDescriber>();
 
             services.AddTransient<IUserStore<User>, UserStore>();
             services.AddTransient<IRoleStore<Role>, RoleStore>();

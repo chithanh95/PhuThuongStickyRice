@@ -255,6 +255,15 @@ namespace PhuThuongStickyRice.Web.Components.Core.Services
             {
                 // JsonDocument giữ buffer bên dưới: dispose ngay sau khi đọc.
                 using var doc = System.Text.Json.JsonDocument.Parse(body);
+                // Body là JSON string thuần (server trả BadRequest("...")):
+                // lấy chính chuỗi đó — trước đây rơi về null nên vài luồng
+                // admin hiện lỗi kèm cả dấu ngoặc kép (cùng gốc lỗi màn hình
+                // đăng nhập, user báo 2026-10-23).
+                if (doc.RootElement.ValueKind == System.Text.Json.JsonValueKind.String)
+                {
+                    return doc.RootElement.GetString();
+                }
+
                 if (doc.RootElement.TryGetProperty("message", out var messageElement))
                 {
                     return messageElement.GetString();

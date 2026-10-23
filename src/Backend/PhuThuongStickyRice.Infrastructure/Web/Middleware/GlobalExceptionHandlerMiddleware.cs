@@ -72,11 +72,11 @@ namespace PhuThuongStickyRice.Infrastructure.Web.Middleware
 
             return _options.DetailLevel switch
             {
-                GlobalExceptionDetailLevel.None => "An internal exception has occurred.",
+                GlobalExceptionDetailLevel.None => "Đã có lỗi xảy ra. Vui lòng thử lại.",
                 GlobalExceptionDetailLevel.Message => ex.Message,
                 GlobalExceptionDetailLevel.StackTrace => ex.StackTrace,
                 GlobalExceptionDetailLevel.ToString => ex.ToString(),
-                _ => "An internal exception has occurred.",
+                _ => "Đã có lỗi xảy ra. Vui lòng thử lại.",
             };
         }
     }

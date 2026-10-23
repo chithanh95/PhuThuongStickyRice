@@ -1,4 +1,4 @@
-#nullable enable annotations // CS8632: annotation string? ở dưới chỉ hợp lệ trong nullable annotations context
+﻿#nullable enable annotations // CS8632: annotation string? ở dưới chỉ hợp lệ trong nullable annotations context
 using PhuThuongStickyRice.Domain.Exceptions;
 
 // [codequality-smell 2026-10-20] Guard kiểm tra độ dài text dùng chung.
@@ -31,7 +31,7 @@ public static class TextValidation
 
         if (value.Trim().Length > maxLength)
         {
-            throw new DomainException($"{fieldLabel} must not exceed {maxLength} characters.");
+            throw new DomainException($"{fieldLabel} không được dài quá {maxLength} ký tự.");
         }
     }
 
@@ -66,7 +66,7 @@ public static class TextValidation
 
             if (value.Trim().Length > maxLength)
             {
-                throw new DomainException($"{fieldLabel} must not exceed {maxLength} characters.");
+                throw new DomainException($"{fieldLabel} không được dài quá {maxLength} ký tự.");
             }
         }
         else
@@ -78,7 +78,7 @@ public static class TextValidation
 
             if (value.Length > maxLength)
             {
-                throw new DomainException($"{fieldLabel} must not exceed {maxLength} characters.");
+                throw new DomainException($"{fieldLabel} không được dài quá {maxLength} ký tự.");
             }
         }
     }

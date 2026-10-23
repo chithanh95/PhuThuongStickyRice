@@ -48,19 +48,19 @@ namespace PhuThuongStickyRice.Domain.ValueObjects
         {
             if (amount < 0)
             {
-                throw new DomainException("Price amount must not be negative.");
+                throw new DomainException("Giá tiền không được âm.");
             }
 
             if (string.IsNullOrWhiteSpace(currency))
             {
-                throw new DomainException("Currency must not be empty.");
+                throw new DomainException("Mã tiền tệ không được để trống.");
             }
 
             var normalized = currency.Trim().ToUpperInvariant();
 
             if (normalized.Length != 3)
             {
-                throw new DomainException("Currency must be a 3-letter ISO 4217 code (e.g. VND).");
+                throw new DomainException("Mã tiền tệ phải là mã ISO 4217 gồm 3 chữ cái (VD: VND).");
             }
 
             return new Money(amount, normalized);
