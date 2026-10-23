@@ -141,6 +141,9 @@ do admin upload). DataProtection keys lưu trong database nên nhiều instance 
 
 ## Nhật ký thay đổi
 
+### 2026-10-23 — Dọn 2 link chết trong NavMenu
+- Bỏ mục **"Đặt món nhóm"** (`href="nhom"` — tính năng đặt món theo nhóm đã gỡ từ trước, link trỏ vào trang không còn tồn tại) và mục **"Đăng nhập quản trị"** (`href="login"`) khỏi `NavMenu.razor` của Web host: khu khách hàng không chứa lối vào quản trị (nhân viên đăng nhập qua trang `/login` riêng như thiết kế hiện hành). Mục "Đăng nhập / Đăng ký" của khách giữ nguyên.
+
 ### 2026-10-22 — Sửa hero shop tràn ngang mobile + lịch sử đơn hiện đúng lỗi server
 - **Hero shop mobile**: badge trạng thái trong hero (vd "Quán đang nghỉ — vẫn nhận đặt hàng, mở lại lúc 06:00...") bị Bootstrap ép `white-space: nowrap` → tràn khỏi hero, đẩy cả khối chữ rộng hơn màn hình (dòng mô tả bị cắt mép phải). Nay badge được xuống dòng bình thường + cột chữ hero co được (`min-width: 0`).
 - **Tra cứu lịch sử đơn theo SĐT**: khi server trả lỗi, frontend trước đây chỉ đọc thông điệp thật ở nhánh có OTP; nhánh thường ném nguyên chuỗi lỗi thô `net_http_message_not_success_statuscode_reason, 400, Bad Request` lên mặt khách. Nay `GetOrdersByPhoneAsync` đọc `message` của server cho mọi lỗi — khách thấy lý do thật bằng tiếng Việt.
