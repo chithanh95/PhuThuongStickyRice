@@ -151,6 +151,8 @@ namespace PhuThuongStickyRice.Web.Components.Core.Services
         /// <summary>
         /// Gửi POST với JSON body, gắn bearer token, xử lý 401/404 chung,
         /// và giải mã response JSON. Bỏ qua body khi <paramref name="body"/> null.
+        /// Khi server trả lỗi: ném <see cref="HttpRequestException"/> kèm THÔNG
+        /// ĐIỆP THẬT của server (đọc từ body) thay cho chuỗi lỗi mặc định.
         /// </summary>
         /// <typeparam name="T">Kiểu DTO của response.</typeparam>
         /// <param name="url">API endpoint tương đối (vd "api/orders").</param>
@@ -171,7 +173,21 @@ namespace PhuThuongStickyRice.Web.Components.Core.Services
             using var response = await _httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
             HandleUnauthorized(response);
             HandleNotFound(response);
-            response.EnsureSuccessStatusCode();
+            if (!response.IsSuccessStatusCode)
+            {
+                // Đọc THÔNG ĐIỆP THẬT của server (vd DomainException -> body
+                // { "message": ... }) thay vì EnsureSuccessStatusCode ném
+                // chuỗi lỗi chung chung — cùng luật với ShopService.CreateOrderAsync
+                // (SH5). Phát hiện từ rà soát POS 2026-10-23: trước đây mọi lý do
+                // nghiệp vụ (quán tạm ngưng, món hết giờ bán, topping vừa tắt...)
+                // đều bị nuốt, nhân viên chỉ thấy "400 (Bad Request)". Vẫn ném
+                // HttpRequestException để các caller hiện tại không đổi hành vi.
+                var errorBody = await response.Content.ReadAsStringAsync();
+                throw new HttpRequestException(
+                    ParseServerErrorMessage(errorBody)
+                    ?? $"Yêu cầu thất bại ({(int)response.StatusCode}). Vui lòng thử lại.");
+            }
+
             var result = await response.Content.ReadAs<T>();
             return result;
         }

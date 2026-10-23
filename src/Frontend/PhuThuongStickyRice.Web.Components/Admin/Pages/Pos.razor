@@ -1,0 +1,526 @@
+@* POS bán tại quầy (item 127 — backend PosAppService đã có sẵn, trang này là
+   phần giao diện còn thiếu): nhân viên chạm chọn món, tạo đơn tiền mặt cho
+   khách mua trực tiếp. Đơn POS do server tạo + thu tiền + hoàn tất ngay
+   (Source = "POS"); trang này chỉ thu thập món/khách và hiển thị kết quả. *@
+@page "/admin/pos"
+@attribute [Authorize(Roles = "Admin,Cashier")]
+@using PhuThuongStickyRice.Web.Components.Admin.Models
+@using PhuThuongStickyRice.Web.Components.Admin.Services
+@using PhuThuongStickyRice.Web.Components.Core.Helpers
+@using PhuThuongStickyRice.Web.Components.Shop
+@using PhuThuongStickyRice.Web.Components.Shop.Models
+@using PhuThuongStickyRice.Web.Components.Shop.Services
+@using ToppingModel = PhuThuongStickyRice.Web.Components.Shop.Models.ToppingModel
+@using ProductSizeOptionModel = PhuThuongStickyRice.Web.Components.Shop.Models.ProductSizeOptionModel
+@inject ShopService ShopService
+@inject AdminCommerceService AdminCommerceService
+
+<div class="lx-page-head">
+    <h4 class="lx-page-title">POS bán tại quầy</h4>
+    <ol class="lx-breadcrumb">
+        <li><a href="/dashboard">Xôi Huyền</a></li>
+        <li class="current">POS bán tại quầy</li>
+    </ol>
+</div>
+
+@if (!string.IsNullOrEmpty(_loadError))
+{
+    <div class="alert alert-danger">@_loadError</div>
+}
+@if (!string.IsNullOrEmpty(_error))
+{
+    <div class="alert alert-danger">@_error</div>
+}
+
+@if (_loading)
+{
+    <p><em>Đang tải thực đơn...</em></p>
+}
+else if (_created != null)
+{
+    <div class="card pos-success">
+        <div class="pos-success-icon"><i class="fa-solid fa-circle-check"></i></div>
+        <h4>Đã tạo đơn <strong>@_created.OrderNumber</strong></h4>
+        <p class="pos-success-total">Tổng tiền: <strong>@PriceFormatter.FormatPrice(_created.TotalAmount)</strong></p>
+        @if (_changeDue.HasValue)
+        {
+            <p>Thối lại khách: <strong>@PriceFormatter.FormatPrice(_changeDue.Value)</strong></p>
+        }
+        <p class="text-muted">Đơn đã ghi nhận thanh toán tiền mặt và hoàn tất.</p>
+        <div class="pos-success-actions">
+            <a class="btn btn-outline-secondary" href="/orders/print/@_created.Id" target="_blank" rel="noopener">
+                <i class="fa-solid fa-print"></i> In hóa đơn
+            </a>
+            <button type="button" class="btn btn-primary" @onclick="NewSale">
+                <i class="fa-solid fa-plus"></i> Bán đơn mới
+            </button>
+        </div>
+    </div>
+}
+else
+{
+    <div class="pos-layout">
+        <section class="pos-menu">
+            <div class="pos-tools">
+                <input class="form-control pos-search" placeholder="Tìm món..." @bind="_search" @bind:event="oninput" />
+                <div class="pos-cats">
+                    <button type="button" class="btn @(_category == "" ? "btn-primary" : "btn-outline-primary")" @onclick="() => _category = string.Empty">Tất cả</button>
+                    @foreach (var cat in _categories)
+                    {
+                        <button type="button" class="btn @(_category == cat ? "btn-primary" : "btn-outline-primary")" @onclick="() => _category = cat">@cat</button>
+                    }
+                </div>
+            </div>
+
+            <div class="pos-grid">
+                @foreach (var product in VisibleProducts)
+                {
+                    var limitReached = IsDailyLimitReached(product);
+                    <div class="pos-card @(limitReached ? "pos-card-off" : "")" @onclick="() => QuickAdd(product)">
+                        @{
+                            var img = CartState.FirstImageUrl(product.ImageUrlsJson);
+                        }
+                        @if (!string.IsNullOrEmpty(img))
+                        {
+                            <img class="pos-card-img" src="@img" alt="@product.Name" loading="lazy" />
+                        }
+                        else
+                        {
+                            <div class="pos-card-img pos-card-emoji">🍚</div>
+                        }
+                        <div class="pos-card-name">@product.Name</div>
+                        <div class="pos-card-price">@PriceFormatter.FormatPrice(DisplayPrice(product))</div>
+                        @if (limitReached)
+                        {
+                            <span class="badge badge-danger">Hết suất hôm nay</span>
+                        }
+                        else if (product.RemainingToday.HasValue)
+                        {
+                            <span class="badge badge-info">Còn @product.RemainingToday.Value suất</span>
+                        }
+                        @if (HasOptions(product))
+                        {
+                            <button type="button" class="btn btn-sm btn-outline-secondary pos-opt-btn"
+                                    @onclick="() => OpenConfig(product)" @onclick:stopPropagation="true">
+                                <i class="fa-solid fa-sliders"></i> Tuỳ chọn
+                            </button>
+                        }
+                    </div>
+                }
+            </div>
+            @if (VisibleProducts.Count == 0)
+            {
+                <p class="text-muted mt-3">Không có món nào phù hợp.</p>
+            }
+        </section>
+
+        <aside class="card pos-cart">
+            <h5><i class="fa-solid fa-basket-shopping"></i> Đơn đang bán</h5>
+            <input class="form-control mb-2" placeholder="Tên khách (bỏ trống = Khách vãng lai)" @bind="_customerName" />
+            <input class="form-control mb-2" placeholder="SĐT khách — tích điểm, không bắt buộc" @bind="_customerPhone" inputmode="numeric" />
+
+            @if (_cart.Count == 0)
+            {
+                <p class="text-muted pos-cart-empty">Chạm vào món bên trái để thêm vào đơn.</p>
+            }
+            else
+            {
+                <div class="pos-lines">
+                    @foreach (var line in _cart)
+                    {
+                        <div class="pos-line">
+                            <div class="pos-line-main">
+                                <div class="pos-line-name">@line.ProductName</div>
+                                @if (!string.IsNullOrEmpty(line.ConfigSummary))
+                                {
+                                    <div class="pos-line-config">@line.ConfigSummary</div>
+                                }
+                                <div class="pos-line-unit">@PriceFormatter.FormatPrice(line.UnitPrice)</div>
+                            </div>
+                            <div class="pos-line-qty">
+                                <button type="button" class="btn btn-outline-secondary pos-step" @onclick="() => ChangeQty(line, -1)">−</button>
+                                <span class="pos-qty-num">@line.Quantity</span>
+                                <button type="button" class="btn btn-outline-secondary pos-step" @onclick="() => ChangeQty(line, 1)">+</button>
+                            </div>
+                            <div class="pos-line-total">@PriceFormatter.FormatPrice(line.UnitPrice * line.Quantity)</div>
+                            <button type="button" class="btn btn-link text-danger pos-remove" title="Bỏ món này" @onclick="() => RemoveLine(line)">
+                                <i class="fa-solid fa-trash"></i>
+                            </button>
+                        </div>
+                    }
+                </div>
+            }
+
+            <input class="form-control mb-2" placeholder="Ghi chú đơn (tùy chọn)" @bind="_note" />
+            <div class="pos-cash-row">
+                <label for="posCashGiven">Khách đưa (để tính tiền thối)</label>
+                <input id="posCashGiven" type="number" class="form-control" min="0" step="1000" @bind="_cashGiven" />
+                @if (ChangeHint != null)
+                {
+                    <div class="pos-change">@ChangeHint</div>
+                }
+            </div>
+
+            <div class="pos-total-row">
+                <span>Tổng cộng</span>
+                <strong>@PriceFormatter.FormatPrice(CartTotal)</strong>
+            </div>
+            <button type="button" class="btn btn-success pos-submit" disabled="@(_cart.Count == 0 || _submitting)" @onclick="SubmitAsync">
+                @(_submitting ? "Đang tạo đơn..." : "Thu tiền mặt — Tạo đơn")
+            </button>
+            <p class="pos-hint">Khách trả tiền mặt tại quầy — đơn được ghi nhận đã thanh toán và hoàn tất ngay khi tạo.</p>
+        </aside>
+    </div>
+}
+
+@if (_configProduct != null)
+{
+    <div class="pos-modal-backdrop" @onclick="CloseConfig">
+        <div class="pos-modal" @onclick:stopPropagation="true">
+            <h5>@_configProduct.Name</h5>
+
+            @if (ConfigSizes.Count > 1)
+            {
+                <div class="pos-modal-label">Kích cỡ</div>
+                <div class="pos-chips">
+                    @foreach (var size in ConfigSizes)
+                    {
+                        <button type="button" class="btn @(_configSizeId == size.Id ? "btn-primary" : "btn-outline-primary")"
+                                @onclick="() => _configSizeId = size.Id">
+                            @size.Name — @PriceFormatter.FormatPrice(ShopProductModel.EffectivePrice(_configProduct, size.Price))
+                        </button>
+                    }
+                </div>
+            }
+
+            @if (_toppings.Count > 0)
+            {
+                <div class="pos-modal-label">Món ăn kèm</div>
+                <div class="pos-chips">
+                    @foreach (var topping in _toppings)
+                    {
+                        <button type="button" class="btn @(_configToppings.Contains(topping.Id) ? "btn-primary" : "btn-outline-primary")"
+                                @onclick="() => ToggleTopping(topping.Id)">
+                            @topping.Name (+@PriceFormatter.FormatPrice(topping.ExtraPrice))
+                        </button>
+                    }
+                </div>
+            }
+
+            <div class="pos-modal-label">Số lượng</div>
+            <div class="pos-line-qty">
+                <button type="button" class="btn btn-outline-secondary pos-step" @onclick="() => _configQty = Math.Max(1, _configQty - 1)">−</button>
+                <span class="pos-qty-num">@_configQty</span>
+                <button type="button" class="btn btn-outline-secondary pos-step" @onclick="() => _configQty++">+</button>
+            </div>
+
+            <div class="pos-modal-actions">
+                <button type="button" class="btn btn-outline-secondary" @onclick="CloseConfig">Đóng</button>
+                <button type="button" class="btn btn-primary" @onclick="ConfirmConfig">
+                    Thêm vào đơn — @PriceFormatter.FormatPrice(ConfigLineTotal)
+                </button>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    /// <summary>Một dòng trong giỏ POS tạm (chỉ sống trong trang, không lưu trữ).</summary>
+    private sealed class PosLine
+    {
+        public string Key { get; set; }
+        public Guid ProductId { get; set; }
+        public string ProductName { get; set; }
+        public Guid? SizeOptionId { get; set; }
+        public List<Guid> ToppingIds { get; set; } = new List<Guid>();
+        public string ConfigSummary { get; set; }
+        public decimal UnitPrice { get; set; }
+        public int Quantity { get; set; } = 1;
+    }
+
+    private List<ShopProductModel> _products = new List<ShopProductModel>();
+    private List<ToppingModel> _toppings = new List<ToppingModel>();
+    private List<string> _categories = new List<string>();
+    private readonly List<PosLine> _cart = new List<PosLine>();
+
+    private bool _loading = true;
+    private string _loadError;
+    private string _error;
+    private string _search = string.Empty;
+    private string _category = string.Empty;
+
+    private string _customerName = string.Empty;
+    private string _customerPhone = string.Empty;
+    private string _note = string.Empty;
+    private decimal? _cashGiven;
+    private bool _submitting;
+    private PosOrderResultModel _created;
+    private decimal? _changeDue;
+
+    private ShopProductModel _configProduct;
+    private Guid? _configSizeId;
+    private readonly HashSet<Guid> _configToppings = new HashSet<Guid>();
+    private int _configQty = 1;
+
+    /// <summary>Tải thực đơn (món đang bán) + topping đang bật cho POS.</summary>
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            var page = await ShopService.GetProductsAsync();
+            _products = (page?.Items ?? new List<ShopProductModel>())
+                .Where(p => string.Equals(p.Status, "Active", StringComparison.OrdinalIgnoreCase))
+                .OrderBy(p => p.SortOrder)
+                .ThenBy(p => p.Name)
+                .ToList();
+            _toppings = (await ShopService.GetToppingsAsync() ?? new List<ToppingModel>())
+                .Where(t => t.IsActive)
+                .ToList();
+            _categories = _products
+                .Select(p => p.Category)
+                .Where(c => !string.IsNullOrWhiteSpace(c))
+                .Distinct()
+                .OrderBy(c => c)
+                .ToList();
+        }
+        catch (Exception ex)
+        {
+            _loadError = string.IsNullOrWhiteSpace(ex.Message)
+                ? "Không tải được thực đơn. Vui lòng tải lại trang."
+                : ex.Message;
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    /// <summary>Danh sách món sau khi lọc theo danh mục + ô tìm kiếm.</summary>
+    private List<ShopProductModel> VisibleProducts => _products
+        .Where(p => _category == string.Empty || string.Equals(p.Category, _category, StringComparison.Ordinal))
+        .Where(p => string.IsNullOrWhiteSpace(_search)
+            || p.Name.Contains(_search.Trim(), StringComparison.OrdinalIgnoreCase))
+        .ToList();
+
+    /// <summary>Kích cỡ mặc định của món: cỡ đang bật đầu tiên theo thứ tự hiển thị.</summary>
+    private static ProductSizeOptionModel DefaultSize(ShopProductModel product) =>
+        product?.Sizes?.Where(s => s.IsActive).OrderBy(s => s.SortOrder).FirstOrDefault();
+
+    /// <summary>Các kích cỡ đang bật của món đang mở popup tuỳ chọn.</summary>
+    private List<ProductSizeOptionModel> ConfigSizes => _configProduct?.Sizes?
+        .Where(s => s.IsActive).OrderBy(s => s.SortOrder).ToList()
+        ?? new List<ProductSizeOptionModel>();
+
+    /// <summary>Giá hiển thị trên thẻ món = giá hiệu dụng theo kích cỡ mặc định.</summary>
+    private static decimal DisplayPrice(ShopProductModel product) =>
+        ShopProductModel.EffectivePrice(product, DefaultSize(product)?.Price ?? product.Price);
+
+    /// <summary>Món đã hết suất bán trong ngày (server cũng chặn ở bước tạo đơn).</summary>
+    private static bool IsDailyLimitReached(ShopProductModel product) =>
+        product?.RemainingToday.HasValue == true && product.RemainingToday.Value <= 0;
+
+    /// <summary>Món có tuỳ chọn đáng mở popup: nhiều kích cỡ, hoặc quán có topping.</summary>
+    private bool HasOptions(ShopProductModel product) =>
+        (product?.Sizes?.Count(s => s.IsActive) ?? 0) > 1 || _toppings.Count > 0;
+
+    /// <summary>Chạm vào thẻ món = thêm ngay 1 phần với kích cỡ mặc định, không topping.</summary>
+    private void QuickAdd(ShopProductModel product)
+    {
+        if (product == null || IsDailyLimitReached(product))
+        {
+            return;
+        }
+
+        AddLine(product, DefaultSize(product), new List<ToppingModel>(), 1);
+    }
+
+    /// <summary>
+    /// Thêm 1 cấu hình món vào giỏ; trùng cấu hình (cùng món + cỡ + topping)
+    /// thì cộng dồn số lượng thay vì tạo dòng mới — giống luật giỏ web.
+    /// </summary>
+    private void AddLine(ShopProductModel product, ProductSizeOptionModel size, List<ToppingModel> toppings, int quantity)
+    {
+        var toppingIds = toppings.Select(t => t.Id).OrderBy(x => x).ToList();
+        var key = product.Id + "|" + (size?.Id.ToString() ?? "-") + "|" + string.Join(",", toppingIds);
+        var existing = _cart.FirstOrDefault(l => l.Key == key);
+        if (existing != null)
+        {
+            existing.Quantity += quantity;
+            return;
+        }
+
+        var summaryParts = new List<string>();
+        if (size != null)
+        {
+            summaryParts.Add(size.Name);
+        }
+
+        if (toppings.Count > 0)
+        {
+            summaryParts.Add(string.Join(", ", toppings.Select(t => t.Name)));
+        }
+
+        _cart.Add(new PosLine
+        {
+            Key = key,
+            ProductId = product.Id,
+            ProductName = product.Name,
+            SizeOptionId = size?.Id,
+            ToppingIds = toppingIds,
+            ConfigSummary = string.Join(" · ", summaryParts),
+            UnitPrice = ShopProductModel.EffectivePrice(product, size?.Price ?? product.Price)
+                + toppings.Sum(t => t.ExtraPrice),
+            Quantity = quantity
+        });
+    }
+
+    /// <summary>Mở popup chọn kích cỡ/topping/số lượng cho 1 món.</summary>
+    private void OpenConfig(ShopProductModel product)
+    {
+        _configProduct = product;
+        _configSizeId = DefaultSize(product)?.Id;
+        _configToppings.Clear();
+        _configQty = 1;
+    }
+
+    private void CloseConfig() => _configProduct = null;
+
+    private void ToggleTopping(Guid toppingId)
+    {
+        if (!_configToppings.Add(toppingId))
+        {
+            _configToppings.Remove(toppingId);
+        }
+    }
+
+    /// <summary>Tổng tiền của dòng đang cấu hình trong popup.</summary>
+    private decimal ConfigLineTotal
+    {
+        get
+        {
+            if (_configProduct == null)
+            {
+                return 0;
+            }
+
+            var size = ConfigSizes.FirstOrDefault(s => s.Id == _configSizeId);
+            var toppings = _toppings.Where(t => _configToppings.Contains(t.Id)).ToList();
+            var unit = ShopProductModel.EffectivePrice(_configProduct, size?.Price ?? _configProduct.Price)
+                + toppings.Sum(t => t.ExtraPrice);
+            return unit * _configQty;
+        }
+    }
+
+    /// <summary>Xác nhận popup: đưa cấu hình đã chọn vào giỏ.</summary>
+    private void ConfirmConfig()
+    {
+        if (_configProduct == null || IsDailyLimitReached(_configProduct))
+        {
+            return;
+        }
+
+        var size = ConfigSizes.FirstOrDefault(s => s.Id == _configSizeId);
+        var toppings = _toppings.Where(t => _configToppings.Contains(t.Id)).ToList();
+        AddLine(_configProduct, size, toppings, _configQty);
+        CloseConfig();
+    }
+
+    /// <summary>Tăng/giảm số lượng 1 dòng; giảm về 0 thì bỏ dòng khỏi giỏ.</summary>
+    private void ChangeQty(PosLine line, int delta)
+    {
+        line.Quantity += delta;
+        if (line.Quantity <= 0)
+        {
+            _cart.Remove(line);
+        }
+    }
+
+    private void RemoveLine(PosLine line) => _cart.Remove(line);
+
+    /// <summary>Tổng tiền giỏ theo giá hiển thị (server tính lại khi tạo đơn).</summary>
+    private decimal CartTotal => _cart.Sum(l => l.UnitPrice * l.Quantity);
+
+    /// <summary>Gợi ý tiền thối ngay khi nhập số khách đưa.</summary>
+    private string ChangeHint
+    {
+        get
+        {
+            if (!_cashGiven.HasValue || _cart.Count == 0)
+            {
+                return null;
+            }
+
+            var diff = _cashGiven.Value - CartTotal;
+            return diff >= 0
+                ? "Thối lại: " + PriceFormatter.FormatPrice(diff)
+                : "Khách còn thiếu: " + PriceFormatter.FormatPrice(-diff);
+        }
+    }
+
+    /// <summary>
+    /// Tạo đơn POS qua AdminCommerceService (POST api/pos/orders, vai trò
+    /// Admin/Cashier). Server tự gán khách vãng lai/SĐT placeholder khi để
+    /// trống, tính lại toàn bộ tiền và hoàn tất đơn ngay.
+    /// </summary>
+    private async Task SubmitAsync()
+    {
+        if (_submitting || _cart.Count == 0)
+        {
+            return;
+        }
+
+        _error = null;
+        var phone = _customerPhone?.Trim();
+        if (!string.IsNullOrEmpty(phone) && !PhoneValidation.IsValidVnPhone(phone))
+        {
+            _error = "Số điện thoại không đúng định dạng (VD: 0901234567).";
+            return;
+        }
+
+        _submitting = true;
+        try
+        {
+            var payload = new CreatePosOrderModel
+            {
+                CustomerName = string.IsNullOrWhiteSpace(_customerName) ? null : _customerName.Trim(),
+                CustomerPhone = string.IsNullOrEmpty(phone) ? null : phone,
+                Note = string.IsNullOrWhiteSpace(_note) ? null : _note.Trim(),
+                Lines = _cart.Select(l => new PosOrderLineModel
+                {
+                    ProductId = l.ProductId,
+                    Quantity = l.Quantity,
+                    SizeOptionId = l.SizeOptionId,
+                    ToppingIds = l.ToppingIds
+                }).ToList()
+            };
+
+            _created = await AdminCommerceService.CreatePosOrderAsync<PosOrderResultModel>(payload);
+            _changeDue = _cashGiven.HasValue && _created != null && _cashGiven.Value >= _created.TotalAmount
+                ? _cashGiven.Value - _created.TotalAmount
+                : (decimal?)null;
+            _cart.Clear();
+        }
+        catch (Exception ex)
+        {
+            _error = string.IsNullOrWhiteSpace(ex.Message)
+                ? "Không tạo được đơn. Vui lòng thử lại."
+                : ex.Message;
+        }
+        finally
+        {
+            _submitting = false;
+        }
+    }
+
+    /// <summary>Đặt lại màn hình để bán đơn tiếp theo.</summary>
+    private void NewSale()
+    {
+        _created = null;
+        _changeDue = null;
+        _customerName = string.Empty;
+        _customerPhone = string.Empty;
+        _note = string.Empty;
+        _cashGiven = null;
+        _error = null;
+    }
+}

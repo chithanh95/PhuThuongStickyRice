@@ -141,6 +141,11 @@ do admin upload). DataProtection keys lưu trong database nên nhiều instance 
 
 ## Nhật ký thay đổi
 
+### 2026-10-23 — Mở trang POS bán tại quầy (/admin/pos)
+- Backend POS (item 127: `PosController` + `PosAppService`) đã có sẵn từ trước — nay bổ sung **giao diện trang POS** còn thiếu, thêm mục menu "POS bán tại quầy" trong sidebar admin (vai trò Admin + Cashier).
+- Cách dùng: nhân viên chạm thẻ món để thêm vào đơn (món có nhiều kích cỡ/topping thì bấm "Tuỳ chọn" để chọn), tăng/giảm số lượng ngay trong giỏ, nhập tên/SĐT khách nếu có (bỏ trống = "Khách vãng lai"; có SĐT thì đơn tích điểm như đơn web), nhập số tiền khách đưa để máy tính tiền thối. Bấm **"Thu tiền mặt — Tạo đơn"**: server tính lại toàn bộ tiền, ghi nhận đã thanh toán tiền mặt và **hoàn tất đơn ngay** (nguồn đơn "POS"); màn hình xác nhận có nút in hóa đơn. POS chỉ áp dụng cho khách trả tiền mặt tại quầy — khách chuyển khoản vẫn đặt qua web/checkout như thường.
+- Đợt rà soát thông luồng (đội test) phát hiện + đã sửa: `ApiClientBase.PostAsync` trước đây ném chuỗi lỗi mặc định khi server từ chối, nuốt mất lý do thật — nay đọc `message` của server cho mọi POST (áp dụng chung cho các màn hình admin dùng POST, gồm POS): nhân viên thấy đúng lý do tiếng Việt (quán tạm ngưng, món ngoài giờ bán, topping vừa tắt...).
+
 ### 2026-10-23 — Dọn 2 link chết trong NavMenu
 - Bỏ mục **"Đặt món nhóm"** (`href="nhom"` — tính năng đặt món theo nhóm đã gỡ từ trước, link trỏ vào trang không còn tồn tại) và mục **"Đăng nhập quản trị"** (`href="login"`) khỏi `NavMenu.razor` của Web host: khu khách hàng không chứa lối vào quản trị (nhân viên đăng nhập qua trang `/login` riêng như thiết kế hiện hành). Mục "Đăng nhập / Đăng ký" của khách giữ nguyên.
 
