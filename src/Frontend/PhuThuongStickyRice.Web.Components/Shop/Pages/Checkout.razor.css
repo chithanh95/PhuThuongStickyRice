@@ -672,3 +672,88 @@ html.dark .btn-link:hover {
     color: #d5cdf5;
 }
 /* ===== END UIUX run 04:35 - Agent2 FIX 2 ===== */
+
+/* ===== Đợt sửa theo báo cáo user 2026-10-23 =====
+   1) Nút ✕ xóa SĐT trong ô số điện thoại (Checkout.razor, .co-phone-field):
+   nút nằm trong ô, vùng bấm 40px cho người lớn tuổi dễ chạm; ô nhập chừa
+   48px bên phải để chữ không chạy dưới nút. */
+.co-phone-field {
+    position: relative;
+}
+
+.co-phone-field .form-control {
+    padding-right: 48px;
+}
+
+.co-phone-clear {
+    position: absolute;
+    top: 50%;
+    right: 4px;
+    transform: translateY(-50%);
+    width: 40px;
+    height: 40px;
+    border: none;
+    background: transparent;
+    color: #6c757d;
+    font-size: 24px;
+    line-height: 1;
+    cursor: pointer;
+}
+
+html.dark .co-phone-clear {
+    color: #a5a2bd;
+}
+
+/* 2) Bảng tóm tắt đơn LỆCH TRÁI trên mobile: layout tự động khiến tổng
+   bề rộng tối thiểu của bảng (cột SL có 2 nút 44px + cột ×) vượt chiều
+   rộng card → card-body cuộn ngang, khách chỉ thấy phần trái của bảng,
+   cột × bị đẩy ra ngoài màn hình. Khóa table-layout: fixed + width 100%
+   và chia sẵn bề rộng cột: bảng luôn vừa đúng card, tên món dài tự
+   xuống dòng. */
+@media (max-width: 767.98px) {
+    .co-summary table {
+        table-layout: fixed;
+        width: 100%;
+    }
+
+    .co-summary th:nth-child(1),
+    .co-summary td:nth-child(1) {
+        width: auto;
+    }
+
+    .co-summary th:nth-child(2),
+    .co-summary td:nth-child(2) {
+        width: 132px;
+    }
+
+    .co-summary th:nth-child(3),
+    .co-summary td:nth-child(3) {
+        width: 84px;
+    }
+
+    .co-summary th:nth-child(4),
+    .co-summary td:nth-child(4) {
+        width: 48px;
+    }
+
+    .co-summary td:first-child {
+        word-break: break-word;
+    }
+}
+
+/* 3) Nhịp dọc thống nhất (user báo: khoảng cách giữa các ô nhập và nút
+   không đều, chỗ gần quá chỗ xa quá): mọi khối trực tiếp trong card tóm
+   tắt cách nhau đúng 16px, khối cuối không chừa khoảng thừa; các card
+   trong trang cũng cách nhau 16px. */
+.co-summary .card-body > * {
+    margin-bottom: 16px;
+}
+
+.co-summary .card-body > *:last-child {
+    margin-bottom: 0;
+}
+
+.row > [class*="col-"] > .card {
+    margin-bottom: 16px;
+}
+/* ===== END đợt sửa 2026-10-23 ===== */

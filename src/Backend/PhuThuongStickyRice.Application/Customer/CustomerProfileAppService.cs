@@ -31,6 +31,13 @@ namespace PhuThuongStickyRice.Application.Customer
         /// <summary>Authenticated customer: update my taste preferences / birthday.</summary>
         Task<CustomerProfileDto> UpdateAsync(UpdateCustomerProfileDto dto);
 
+        /// <summary>
+        /// Lưu họ tên của 1 tài khoản (gọi lúc đăng ký — trước đây họ tên
+        /// khách nhập bị bỏ mất vì User không có cột tên). Tên lưu dạng
+        /// claim "fullName" trên bảng UserClaims có sẵn.
+        /// </summary>
+        Task SetFullNameAsync(Guid userId, string fullName);
+
         /// <summary>Admin: registered customers with a birthday in the given month.</summary>
         Task<List<BirthdayMemberDto>> GetBirthdaysAsync(int month);
 
@@ -56,6 +63,14 @@ namespace PhuThuongStickyRice.Application.Customer
     public class CustomerProfileAppService : ApplicationService, ICustomerProfileAppService
     {
         public const string CustomerRoleName = "Customer";
+
+        /// <summary>
+        /// Loại claim lưu họ tên khách trên bảng UserClaims. User entity
+        /// không có cột họ tên và thêm cột phải chờ migration trên DB bán
+        /// hàng; bảng UserClaims đã có sẵn từ migration Init nên lưu tên ở
+        /// đây an toàn, không đổi schema.
+        /// </summary>
+        public const string FullNameClaimType = "fullName";
         private const string GiftCodePrefix = "SN";
         /// <summary>Độ dài phần ngẫu nhiên của mã quà sinh nhật (đứng sau tiền tố SN).</summary>
         private const int GiftCodeRandomPartLength = 6;
@@ -75,6 +90,7 @@ namespace PhuThuongStickyRice.Application.Customer
         private const int MaxBirthdayRows = 500;
 
         private readonly IRepository<User, Guid> _users;
+        private readonly IRepository<UserClaim, Guid> _claims;
         private readonly IRepository<UserRole, Guid> _userRoles;
         private readonly IRepository<Role, Guid> _roles;
         private readonly IRepository<DiscountCode, Guid> _discounts;
@@ -85,6 +101,7 @@ namespace PhuThuongStickyRice.Application.Customer
 
         public CustomerProfileAppService(
             IRepository<User, Guid> users,
+            IRepository<UserClaim, Guid> claims,
             IRepository<UserRole, Guid> userRoles,
             IRepository<Role, Guid> roles,
             IRepository<DiscountCode, Guid> discounts,
@@ -94,6 +111,7 @@ namespace PhuThuongStickyRice.Application.Customer
             IStaffActivityLogger activityLogger)
         {
             _users = users;
+            _claims = claims;
             _userRoles = userRoles;
             _roles = roles;
             _discounts = discounts;
@@ -112,6 +130,8 @@ namespace PhuThuongStickyRice.Application.Customer
         {
             var user = await GetCurrentUserAsync();
             var dto = new CustomerProfileDto();
+            dto.PhoneNumber = user.PhoneNumber;
+            dto.FullName = await GetFullNameAsync(user.Id);
             ParseTaste(user.TastePreferences, dto);
             dto.DateOfBirth = user.DateOfBirth;
             dto.CanChangeDateOfBirth = CanChangeDob(user, out var hint);
@@ -132,6 +152,70 @@ namespace PhuThuongStickyRice.Application.Customer
             }
 
             return dto;
+        }
+
+        /// <summary>
+        /// Đọc họ tên đã lưu dạng claim "fullName" của 1 tài khoản; null khi
+        /// chưa có (tài khoản tạo trước khi có tính năng lưu tên). Fail-soft:
+        /// lỗi đọc claim thì coi như chưa có tên — hồ sơ không được hỏng vì
+        /// dữ liệu phụ này.
+        /// </summary>
+        /// <param name="userId">Id tài khoản cần đọc họ tên.</param>
+        /// <returns>Họ tên đã lưu, hoặc null.</returns>
+        private async Task<string> GetFullNameAsync(Guid userId)
+        {
+            try
+            {
+                var queryable = await _claims.GetQueryableAsync();
+                var claim = await _asyncExecuter.FirstOrDefaultAsync(
+                    queryable.Where(c => c.User.Id == userId && c.Type == FullNameClaimType));
+                return string.IsNullOrWhiteSpace(claim?.Value) ? null : claim.Value;
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// Lưu (hoặc cập nhật) họ tên của 1 tài khoản dưới dạng claim
+        /// "fullName". Gọi từ luồng đăng ký — trước đây họ tên khách nhập ở
+        /// form đăng ký bị bỏ mất hoàn toàn nên checkout không có tên để tự
+        /// điền (user báo 2026-10-23).
+        /// </summary>
+        /// <param name="userId">Id tài khoản vừa tạo.</param>
+        /// <param name="fullName">Họ tên khách nhập (tối đa 100 ký tự).</param>
+        public virtual async Task SetFullNameAsync(Guid userId, string fullName)
+        {
+            var name = (fullName ?? string.Empty).Trim();
+            if (name.Length > 100)
+            {
+                name = name.Substring(0, 100);
+            }
+
+            var queryable = await _claims.GetQueryableAsync();
+            var existing = await _asyncExecuter.FirstOrDefaultAsync(
+                queryable.Where(c => c.User.Id == userId && c.Type == FullNameClaimType));
+            if (existing == null)
+            {
+                if (name.Length == 0)
+                {
+                    return;
+                }
+
+                var user = await _users.GetAsync(userId);
+                await _claims.InsertAsync(new UserClaim
+                {
+                    Type = FullNameClaimType,
+                    Value = name,
+                    User = user
+                }, autoSave: true);
+            }
+            else
+            {
+                existing.Value = name;
+                await _claims.UpdateAsync(existing, autoSave: true);
+            }
         }
 
         /// <summary>

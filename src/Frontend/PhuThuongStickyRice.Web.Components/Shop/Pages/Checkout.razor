@@ -61,7 +61,7 @@
 
 @if (_placedOrder != null)
 {
-    <div class="alert alert-success">
+    <div class="alert alert-success" id="co-order-success">
         <h4>Đặt hàng thành công!</h4>
         <p>Mã đơn hàng của bạn: <strong>@_placedOrder.OrderNumber</strong></p>
         <table class="table table-sm mb-2">
@@ -143,10 +143,14 @@
             </tbody>
         </table>
         <p>Chúng tôi sẽ liên hệ với bạn qua số <strong>@_placedOrder.CustomerPhone</strong> để xác nhận.</p>
+        @* User chốt 2026-10-23: sau thông báo thành công, khách tự chọn
+           "Xem lại đơn" (cuộn lên đầu panel này — nơi liệt kê món + tổng
+           tiền) hoặc "Tra cứu đơn hàng" (sang trang theo dõi trạng thái). *@
         <p class="co-success-nav">
-            <a class="btn btn-outline-secondary btn-sm" href="/">🏠 Về trang chủ</a>
-            <a class="btn btn-primary btn-sm ml-2" href="/shop">🍚 Xem thực đơn</a>
-            <a class="btn btn-outline-primary btn-sm ml-2" href="/track-order?orderNumber=@Uri.EscapeDataString(_placedOrder.OrderNumber)">Tra cứu đơn hàng</a>
+            <a class="btn btn-primary btn-sm" href="#co-order-success">🧾 Xem lại đơn</a>
+            <a class="btn btn-outline-primary btn-sm ml-2" href="/track-order?orderNumber=@Uri.EscapeDataString(_placedOrder.OrderNumber)">📦 Tra cứu đơn hàng</a>
+            <a class="btn btn-outline-secondary btn-sm ml-2" href="/shop">🍚 Xem thực đơn</a>
+            <a class="btn btn-outline-secondary btn-sm ml-2" href="/">🏠 Về trang chủ</a>
         </p>
     </div>
 
@@ -407,7 +411,12 @@ else
                         @* A11y-1610: lỗi validation gắn với input qua aria-describedby +
                            aria-invalid để trình đọc màn hình đọc được lỗi khi focus.
                            Áp dụng cùng pattern cho mọi field có lỗi bên dưới. *@
-                        <input id="co-name" class="form-control @FieldClass(_nameError)" @bind="_order.CustomerName" placeholder="Nguyễn Văn A"
+                        @* bind:event="oninput": gõ tới đâu nhận tới đó. @bind mặc
+                           định (onchange) chỉ chốt giá trị khi rời ô — một lần
+                           StateHasChanged chen ngang (vd tra cứu SĐT hoàn tất)
+                           sẽ render lại giá trị cũ và XÓA chữ đang gõ dở, khách
+                           tưởng ô bị khóa không sửa được (user báo 2026-10-23). *@
+                        <input id="co-name" class="form-control @FieldClass(_nameError)" @bind="_order.CustomerName" @bind:event="oninput" placeholder="Nguyễn Văn A"
                                aria-invalid="@(!string.IsNullOrEmpty(_nameError) ? "true" : null)"
                                aria-describedby="@(!string.IsNullOrEmpty(_nameError) ? "co-name-error" : null)" />
                         @if (!string.IsNullOrEmpty(_nameError))
@@ -416,11 +425,22 @@ else
                         }                    </div>
                     <div class="form-group">
                         <label for="co-phone">@AppLocalizationService.Translate("common.phone") *</label>
-                        <input id="co-phone" class="form-control @FieldClass(_phoneError)" value="@_order.CustomerPhone"
-                               @oninput="OnPhoneInputAsync" @onblur="LookupLastOrderAsync"
-                               placeholder="0901234567" inputmode="tel" maxlength="11"
-                               aria-invalid="@(!string.IsNullOrEmpty(_phoneError) ? "true" : null)"
-                               aria-describedby="@(!string.IsNullOrEmpty(_phoneError) ? "co-phone-error" : null)" />
+                        <div class="co-phone-field">
+                            <input id="co-phone" class="form-control @FieldClass(_phoneError)" value="@_order.CustomerPhone"
+                                   @oninput="OnPhoneInputAsync" @onblur="LookupLastOrderAsync"
+                                   placeholder="0901234567" inputmode="tel" maxlength="11"
+                                   aria-invalid="@(!string.IsNullOrEmpty(_phoneError) ? "true" : null)"
+                                   aria-describedby="@(!string.IsNullOrEmpty(_phoneError) ? "co-phone-error" : null)" />
+                            @* Nút ✕ xóa nhanh SĐT khi nhập sai (user báo 2026-10-23:
+                               muốn có dấu X để xóa mà bấm được). Chỉ hiện khi ô
+                               đang có chữ; bấm là xóa cả SĐT lẫn điểm/ví đã tải
+                               theo số cũ (ClearPhone). *@
+                            @if (!string.IsNullOrEmpty(_order.CustomerPhone))
+                            {
+                                <button type="button" class="co-phone-clear" @onclick="ClearPhone"
+                                        aria-label="Xóa số điện thoại" title="Xóa số điện thoại">×</button>
+                            }
+                        </div>
                         @if (_lookingUpPhone)
                         {
                             <small class="text-muted d-block" role="status">⏳ Đang tìm thông tin đơn cũ...</small>
@@ -1134,6 +1154,14 @@ else
         await ApplyCarriedPhoneAsync();
         await ApplyCarriedDiscountAsync();
 
+        // SĐT cuối cùng (tài khoản / địa chỉ mặc định / mang từ giỏ / chat)
+        // đã ổn định: tải ngay điểm thưởng, số dư ví và TÊN TỪ ĐƠN CŨ cho
+        // số đó. Trước đây tra cứu này chỉ chạy khi khách chạm vào ô SĐT
+        // (gõ/blur) nên khách đăng nhập vào là đặt luôn sẽ không thấy tên
+        // được điền từ đơn cũ (user báo 2026-10-23). Hàm tự bỏ qua khi
+        // SĐT trống/không hợp lệ hoặc vừa tra cứu đúng số này rồi.
+        await LookupCustomerLoyaltyAsync();
+
         // Wave 6b (item 30): pause/hours notice for the submit button.
         RefreshOrderingState();
         CartState.OnChange += OnCartChanged;
@@ -1220,18 +1248,52 @@ else
                     _order.CustomerPhone = phone;
                 }
 
-                // Item 243: tự điền địa chỉ mặc định để nút "đặt 1 chạm" dùng được ngay.
-                var defaultAddr = _savedAddresses.FirstOrDefault(a => a.IsDefault);
-                if (defaultAddr != null
-                    && string.IsNullOrWhiteSpace(_order.CustomerName)
-                    && !string.IsNullOrWhiteSpace(defaultAddr.ReceiverName))
+                // Hồ sơ tài khoản: họ tên khách nhập khi đăng ký + SĐT tài
+                // khoản (server trả kèm trong profile) — nguồn tên CHÍNH
+                // cho tự điền. Trước đây profile chỉ được đọc để lấy khẩu
+                // vị nên họ tên không bao giờ được điền, khách đăng nhập
+                // rồi vẫn phải gõ lại tên (user báo 2026-10-23). Fail-soft
+                // riêng: lỗi tải hồ sơ thì các nguồn điền khác vẫn chạy.
+                CustomerProfileModel profile = null;
+                try
                 {
-                    _order.CustomerName = defaultAddr.ReceiverName;
-                    if (PhoneValidation.IsValidVnPhone(defaultAddr.ReceiverPhone))
+                    profile = await CustomerProfileService.GetMyAsync();
+                }
+                catch (Exception) { }
+
+                if (profile != null)
+                {
+                    if (string.IsNullOrWhiteSpace(_order.CustomerName)
+                        && !string.IsNullOrWhiteSpace(profile.FullName))
+                    {
+                        _order.CustomerName = profile.FullName.Trim();
+                    }
+                    if (string.IsNullOrWhiteSpace(_order.CustomerPhone)
+                        && PhoneValidation.IsValidVnPhone(profile.PhoneNumber))
+                    {
+                        _order.CustomerPhone = profile.PhoneNumber.Trim();
+                    }
+                }
+
+                // Item 243: tự điền địa chỉ mặc định để nút "đặt 1 chạm"
+                // dùng được ngay. Điền TỪNG trường còn trống (trước đây cả
+                // khối bị khóa theo điều kiện tên trống — có tên từ hồ sơ
+                // là địa chỉ mặc định không được điền nữa).
+                var defaultAddr = _savedAddresses.FirstOrDefault(a => a.IsDefault);
+                if (defaultAddr != null)
+                {
+                    if (string.IsNullOrWhiteSpace(_order.CustomerName)
+                        && !string.IsNullOrWhiteSpace(defaultAddr.ReceiverName))
+                    {
+                        _order.CustomerName = defaultAddr.ReceiverName;
+                    }
+                    if (string.IsNullOrWhiteSpace(_order.CustomerPhone)
+                        && PhoneValidation.IsValidVnPhone(defaultAddr.ReceiverPhone))
                     {
                         _order.CustomerPhone = defaultAddr.ReceiverPhone.Trim();
                     }
-                    if (!string.IsNullOrWhiteSpace(defaultAddr.AddressDetail))
+                    if (string.IsNullOrWhiteSpace(_order.CustomerAddress)
+                        && !string.IsNullOrWhiteSpace(defaultAddr.AddressDetail))
                     {
                         _order.CustomerAddress = defaultAddr.AddressDetail;
                     }
@@ -1239,19 +1301,14 @@ else
 
                 // Item 90: prefill the customer's taste preferences into the
                 // order note (editable — the customer can change it).
-                try
+                if (profile != null && string.IsNullOrWhiteSpace(_order.Notes))
                 {
-                    var profile = await CustomerProfileService.GetMyAsync();
-                    if (string.IsNullOrWhiteSpace(_order.Notes))
+                    var tasteNote = BuildTasteNote(profile);
+                    if (!string.IsNullOrWhiteSpace(tasteNote))
                     {
-                        var tasteNote = BuildTasteNote(profile);
-                        if (!string.IsNullOrWhiteSpace(tasteNote))
-                        {
-                            _order.Notes = tasteNote;
-                        }
+                        _order.Notes = tasteNote;
                     }
                 }
-                catch (Exception) { }
             }
         }
         catch (Exception)
@@ -1638,6 +1695,25 @@ else
                 + $"?amount={amount}&addInfo={Uri.EscapeDataString(_placedOrder.OrderNumber)}"
                 + $"&accountName={Uri.EscapeDataString(_bankInfo.AccountName ?? string.Empty)}";
         }
+    }
+
+    /// <summary>
+    /// Nút ✕ trong ô SĐT: xóa nhanh số đã nhập khi khách nhập sai, đồng
+    /// thời gỡ trạng thái đã tải theo số cũ (điểm thưởng, số dư ví, điểm
+    /// định đổi, lỗi validation) để form không còn hiện thông tin của số
+    /// khác. Reset _suggestedPhone để khi khách gõ lại đúng số cũ, tra
+    /// cứu chạy lại từ đầu.
+    /// </summary>
+    private void ClearPhone()
+    {
+        _phoneLookupCts?.Cancel();
+        _order.CustomerPhone = string.Empty;
+        _suggestedPhone = null;
+        _loyalty = null;
+        _walletBalance = 0;
+        _redeemPoints = 0;
+        _redeemPointsInput = 0;
+        _phoneError = null;
     }
 
     /// <summary>
@@ -2097,19 +2173,12 @@ else
             CartState.Clear();
             CartState.OnChange -= OnCartChanged;
 
-            // TT4: jump straight to order tracking for payment methods that
-            // need no further action on this screen (Cod / Wallet). The
-            // success toast confirms the order; the order number is prefilled
-            // in the track-order lookup.
-            var needsPaymentUi = _placedOrder.PaymentMethod == "BankTransfer"
-                || _placedOrder.PaymentMethod == "MoMo";
+            // User chốt 2026-10-23: đặt xong phải Ở LẠI màn hình thông báo
+            // thành công (panel _placedOrder bên trên) để khách tự chọn
+            // "Xem lại đơn" / "Tra cứu đơn hàng" — bỏ hành vi TT4 cũ tự
+            // nhảy thẳng sang trang tra cứu với đơn COD/Wallet, khách chưa
+            // kịp đọc thông báo đã bị chuyển trang.
             Toasts.Show($"🎉 Đặt hàng thành công! Mã đơn của bạn: {_placedOrder.OrderNumber}");
-            if (!needsPaymentUi)
-            {
-                Navigation.NavigateTo(
-                    $"/track-order?orderNumber={Uri.EscapeDataString(_placedOrder.OrderNumber)}");
-                return;
-            }
 
             if (_placedOrder.PaymentMethod == "BankTransfer"
                 && (_bankInfo == null || !_bankInfo.IsConfigured))

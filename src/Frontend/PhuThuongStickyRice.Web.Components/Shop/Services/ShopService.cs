@@ -1,4 +1,5 @@
 #nullable enable annotations
+using PhuThuongStickyRice.Web.Components.Core.Services;
 using PhuThuongStickyRice.Web.Components.Shop.Models;
 using PhuThuongStickyRice.CrossCuttingConcerns.ExtensionMethods;
 using System;
@@ -16,11 +17,18 @@ namespace PhuThuongStickyRice.Web.Components.Shop.Services
     public class ShopService
     {
         private readonly HttpClient _httpClient;
+        private readonly ITokenStore _tokenStore;
 
-        /// <summary>Khởi tạo service gọi các endpoint public của cửa hàng (không cần token đăng nhập).</summary>
-        public ShopService(HttpClient httpClient)
+        /// <summary>
+        /// Khởi tạo service gọi các endpoint public của cửa hàng. Phần lớn
+        /// endpoint không cần token; riêng tra cứu lịch sử đơn theo SĐT sẽ
+        /// gắn JWT khi khách đã đăng nhập để server nhận diện chủ SĐT
+        /// (xem GetOrdersByPhoneAsync).
+        /// </summary>
+        public ShopService(HttpClient httpClient, ITokenStore tokenStore)
         {
             _httpClient = httpClient;
+            _tokenStore = tokenStore;
         }
 
         /// <summary>Lấy trang đầu danh sách sản phẩm đang bán (không lọc chi nhánh).</summary>
@@ -377,8 +385,28 @@ namespace PhuThuongStickyRice.Web.Components.Shop.Services
                 url += $"&otpCode={Uri.EscapeDataString(otpCode)}";
             }
 
+            // Chủ SĐT đã đăng nhập: gắn JWT lên REQUEST này (không đụng
+            // header mặc định của HttpClient dùng chung) để server nhận
+            // diện chủ số và trả bản đầy đủ không cần OTP
+            // (OrdersController.GetByPhone / IsOwnerRequest). Chưa đăng
+            // nhập thì không có token — request ẩn danh như cũ.
+            using var request = new HttpRequestMessage(HttpMethod.Get, url);
+            try
+            {
+                var token = (await _tokenStore.GetToken())?.AccessToken;
+                if (!string.IsNullOrWhiteSpace(token))
+                {
+                    request.Headers.Authorization =
+                        new AuthenticationHeaderValue("Bearer", token);
+                }
+            }
+            catch (Exception)
+            {
+                // Fail-soft: không đọc được token thì tra cứu ẩn danh.
+            }
+
             // Dispose response để trả kết nối HTTP về pool (CA2000).
-            using var response = await _httpClient.GetAsync(url);
+            using var response = await _httpClient.SendAsync(request);
             if (!response.IsSuccessStatusCode)
             {
                 // Đọc THÔNG ĐIỆP THẬT của server cho MỌI lỗi. Trước đây chỉ

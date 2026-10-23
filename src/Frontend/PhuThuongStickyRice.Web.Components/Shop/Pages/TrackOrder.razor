@@ -20,6 +20,7 @@
 @inject IJSRuntime JSRuntime
 @inject AppLocalizationService AppLocalizationService
 @inject FunnelService Funnel
+@inject Microsoft.AspNetCore.Components.Authorization.AuthenticationStateProvider AuthStateProvider
 @implements IDisposable
 
 <h1>@AppLocalizationService.Translate("shop.track_title")</h1>
@@ -1214,7 +1215,61 @@
         {
             _orderNumber = orderNumber;
         }
+
+        // Khách đã đăng nhập: tự điền SĐT tài khoản vào các ô tra cứu và
+        // tự tải lịch sử đơn của chính số đó (server trả bản đầy đủ cho
+        // chủ SĐT, không cần OTP). Trước đây trang không hề đọc trạng
+        // thái đăng nhập nên thành viên vẫn phải gõ lại SĐT như khách
+        // vãng lai (user báo 2026-10-23). Có ?orderNumber= thì khách
+        // đang tra 1 đơn cụ thể — không tự tải lịch sử để tránh nhiễu.
+        await LoadAccountPhoneAsync();
+        if (!string.IsNullOrWhiteSpace(_accountPhone)
+            && string.IsNullOrWhiteSpace(_orderNumber))
+        {
+            _historyPhone = _accountPhone;
+            await LoadHistoryAsync();
+        }
     }
+
+    /// <summary>SĐT của tài khoản đang đăng nhập (null nếu chưa đăng nhập hoặc username không phải SĐT).</summary>
+    private string _accountPhone;
+
+    /// <summary>
+    /// Đọc SĐT của tài khoản đang đăng nhập (username của khách chính là
+    /// SĐT đăng ký) để tự điền các ô tra cứu. Nhân viên đăng nhập bằng
+    /// email → không phải SĐT hợp lệ → bỏ qua, trang chạy như khách vãng lai.
+    /// </summary>
+    private async Task LoadAccountPhoneAsync()
+    {
+        try
+        {
+            var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+            var name = authState.User.Identity?.Name;
+            if (authState.User.Identity?.IsAuthenticated == true
+                && PhoneValidation.IsValidVnPhone(name))
+            {
+                _accountPhone = name.Trim();
+                if (string.IsNullOrWhiteSpace(_phone))
+                {
+                    _phone = _accountPhone;
+                }
+                if (string.IsNullOrWhiteSpace(_historyPhone))
+                {
+                    _historyPhone = _accountPhone;
+                }
+            }
+        }
+        catch (Exception)
+        {
+            // Fail-soft: không đọc được trạng thái đăng nhập thì tra cứu thủ công như cũ.
+        }
+    }
+
+    /// <summary>SĐT truyền vào có phải SĐT của chính tài khoản đang đăng nhập không.</summary>
+    private bool IsAccountPhone(string phone)
+        => !string.IsNullOrWhiteSpace(_accountPhone)
+            && !string.IsNullOrWhiteSpace(phone)
+            && string.Equals(_accountPhone, phone.Trim(), StringComparison.Ordinal);
 
     /// <summary>
     /// Cờ "momo-payments": MoMo đang tắt (chưa có tài khoản doanh nghiệp)
@@ -1397,6 +1452,14 @@
         try
         {
             _history = await ShopService.GetOrdersByPhoneAsync(_historyPhone.Trim());
+
+            // Chủ SĐT đã đăng nhập: server đã trả bản ĐẦY ĐỦ cho chính chủ
+            // số (ShopService gắn JWT, OrdersController kiểm tra chủ số)
+            // → coi như đã mở khóa: xem chi tiết/đặt lại ngay, ẩn dải OTP.
+            if (IsAccountPhone(_historyPhone))
+            {
+                _historyUnlocked = true;
+            }
         }
         catch (Exception ex)
         {
@@ -2413,7 +2476,12 @@
         _ => "🏪 Nhận tại quán"
     };
 
-    private static RenderFragment OrderStatusBadge(string status) => builder =>
+    // Trước đây nhãn badge in NGUYÊN chuỗi trạng thái tiếng Anh của server
+    // ("Completed", "Pending"...) bất kể ngôn ngữ đang chọn (user báo
+    // 2026-10-23: chọn tiếng Việt vẫn hiện "Completed"). Nay dịch qua
+    // AppLocalizationService (khóa order_status.* — đủ 4 ngôn ngữ);
+    // trạng thái lạ chưa có khóa thì giữ nguyên chuỗi gốc.
+    private RenderFragment OrderStatusBadge(string status) => builder =>
     {
         var css = status switch
         {
@@ -2425,9 +2493,19 @@
             "Cancelled" => "badge badge-danger",
             _ => "badge badge-light"
         };
+        var labelKey = status switch
+        {
+            "Pending" => "order_status.pending",
+            "Confirmed" => "order_status.confirmed",
+            "Preparing" => "order_status.preparing",
+            "Delivering" => "order_status.delivering",
+            "Completed" => "order_status.completed",
+            "Cancelled" => "order_status.cancelled",
+            _ => null
+        };
         builder.OpenElement(0, "span");
         builder.AddAttribute(1, "class", css);
-        builder.AddContent(2, status);
+        builder.AddContent(2, labelKey == null ? status : AppLocalizationService.Translate(labelKey));
         builder.CloseElement();
     };
 

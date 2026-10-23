@@ -62,6 +62,12 @@ namespace PhuThuongStickyRice.Web.Components.Shop.Services
 
     public class CustomerProfileModel
     {
+        /// <summary>Họ tên khách nhập khi đăng ký (server lưu dạng claim) — checkout tự điền.</summary>
+        public string FullName { get; set; }
+
+        /// <summary>SĐT của tài khoản — checkout tự điền.</summary>
+        public string PhoneNumber { get; set; }
+
         public List<string> TasteTags { get; set; } = new List<string>();
 
         public string TasteNote { get; set; }

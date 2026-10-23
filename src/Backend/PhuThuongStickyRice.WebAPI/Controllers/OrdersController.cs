@@ -362,6 +362,11 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
         /// bản ĐẦY ĐỦ phải kèm otpCode đã xác thực về chính SĐT đó
         /// (purpose order-history, xin mã qua POST api/phone-otp/send);
         /// mã sai/thiếu hiệu lực trả 400 kèm thông báo tiếng Việt.
+        /// Ngoại lệ: chủ SĐT ĐÃ ĐĂNG NHẬP (JWT mà Identity.Name — chính là
+        /// username = SĐT của tài khoản khách — trùng SĐT tra cứu) đã xác
+        /// thực danh tính bằng mật khẩu khi đăng nhập, tương đương OTP của
+        /// chính số đó → trả bản đầy đủ luôn, không bắt nhập lại thông tin
+        /// (user báo 2026-10-23).
         /// Strict VN mobile format is validated; 400 on invalid format.
         /// </summary>
         [AllowAnonymous]
@@ -371,6 +376,15 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             [FromQuery] string otpCode,
             CancellationToken cancellationToken = default)
         {
+            // Chủ SĐT đã đăng nhập: dùng chung IsOwnerRequest với
+            // last-by-phone (JWT username = SĐT đăng ký của khách; nhân
+            // viên đăng nhập bằng email nên không bao giờ khớp).
+            if (IsOwnerRequest(phone))
+            {
+                var ownOrders = await _orderAppService.GetOrdersByPhoneAsync(phone);
+                return Ok(ownOrders);
+            }
+
             if (!string.IsNullOrWhiteSpace(otpCode))
             {
                 var verify = await _phoneOtpService.VerifyAsync(

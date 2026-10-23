@@ -9,6 +9,18 @@ namespace PhuThuongStickyRice.Application.Customer
     /// </summary>
     public class CustomerProfileDto
     {
+        /// <summary>
+        /// Họ tên khách nhập khi đăng ký tài khoản. User entity không có cột
+        /// họ tên riêng nên tên được lưu dạng claim "fullName" trên bảng
+        /// UserClaims có sẵn (không cần migration) — xem
+        /// CustomerProfileAppService.SetFullNameAsync. Checkout dùng tên này
+        /// để tự điền ô họ tên cho khách đã đăng nhập.
+        /// </summary>
+        public string FullName { get; set; }
+
+        /// <summary>SĐT của tài khoản (User.PhoneNumber) — checkout tự điền ô SĐT.</summary>
+        public string PhoneNumber { get; set; }
+
         public List<string> TasteTags { get; set; } = new List<string>();
 
         public string TasteNote { get; set; }

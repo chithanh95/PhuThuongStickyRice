@@ -6,6 +6,7 @@
 #nullable enable
 using PhuThuongStickyRice.Application.AuditLogs;
 using PhuThuongStickyRice.Application.Common;
+using PhuThuongStickyRice.Application.Customer;
 using PhuThuongStickyRice.Application.Permissions;
 using PhuThuongStickyRice.Application.Security;
 using PhuThuongStickyRice.Application.Staff;
@@ -42,6 +43,7 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
         private readonly IUserRepository _users;
         private readonly JwtTokenService _jwtTokenService;
         private readonly ILoginAuditAppService _loginAudits;
+        private readonly ICustomerProfileAppService _profiles;
         private readonly ITwoFactorAppService _twoFactor;
         private readonly IPermissionService _permissions;
         private readonly IStaffActivityLogger _activityLogger;
@@ -66,6 +68,7 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             IUserRepository users,
             JwtTokenService jwtTokenService,
             ILoginAuditAppService loginAudits,
+            ICustomerProfileAppService profiles,
             ITwoFactorAppService twoFactor,
             IPermissionService permissions,
             IStaffActivityLogger activityLogger,
@@ -75,6 +78,7 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             _users = users;
             _jwtTokenService = jwtTokenService;
             _loginAudits = loginAudits;
+            _profiles = profiles;
             _twoFactor = twoFactor;
             _permissions = permissions;
             _activityLogger = activityLogger;
@@ -188,6 +192,23 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
 
             await EnsureCustomerRoleAsync(user.Id, cancellationToken);
 
+            // Lưu họ tên khách nhập ở form đăng ký. Trước đây trường này bị
+            // bỏ mất hoàn toàn (User không có cột tên, BuildCustomerUser
+            // không dùng model.FullName) nên checkout không có tên để tự
+            // điền cho khách đã đăng nhập (user báo 2026-10-23). Tên lưu
+            // dạng claim — fail-soft: lỗi lưu tên KHÔNG được làm hỏng đăng ký.
+            if (!string.IsNullOrWhiteSpace(model.FullName))
+            {
+                try
+                {
+                    await _profiles.SetFullNameAsync(user.Id, model.FullName.Trim());
+                }
+                catch (Exception)
+                {
+                    // Tên chỉ là dữ liệu phụ cho tự điền form — bỏ qua khi lỗi.
+                }
+            }
+
             var clientIp = HttpContext.Connection.RemoteIpAddress?.ToString() ?? string.Empty;
             await _loginAudits.RecordAsync(user.UserName, clientIp, true, "Đăng ký tài khoản khách hàng.");
 
@@ -206,8 +227,9 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
 
         /// <summary>
         /// Dựng entity <see cref="User"/> cho khách tự đăng ký: username là SĐT
-        /// (đã validate), SĐT coi như đã xác thực vì không có SMS OTP thật,
-        /// tên hiển thị mặc định bằng SĐT khi khách không nhập họ tên.
+        /// (đã validate), SĐT coi như đã xác thực vì không có SMS OTP thật.
+        /// Họ tên (model.FullName) không nằm trên entity này — Register lưu
+        /// riêng dạng claim qua ICustomerProfileAppService.SetFullNameAsync.
         /// </summary>
         private static User BuildCustomerUser(string phone, CustomerRegisterRequestModel model)
         {
