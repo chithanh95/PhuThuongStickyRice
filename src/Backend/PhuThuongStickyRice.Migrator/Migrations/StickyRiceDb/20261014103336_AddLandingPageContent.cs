@@ -65,9 +65,9 @@ namespace PhuThuongStickyRice.Migrator.Migrations.StickyRiceDb
                     "Chuyện nhà xôi",
                     "[{\"Title\":\"Món ăn sáng được yêu thích nhất tuần\",\"Body\":\"Xôi gấc của quán lọt top món ăn sáng được đặt nhiều nhất khu vực Tây Hồ trên ứng dụng đặt món, với hàng trăm đánh giá 5 sao từ thực khách.\",\"Source\":\"ShopeeFood\"},{\"Title\":\"Giữ trọn nghề nấu xôi trăm năm\",\"Body\":\"Từ đời bà, đời mẹ đến nay, gia đình vẫn giữ đúng công thức làng nghề Phú Thượng: nếp ngon, đồ hai lần lửa, hành phi tự làm mỗi sáng.\",\"Source\":\"Chủ quán chia sẻ\"},{\"Title\":\"Khách quen hơn 5 năm vẫn quay lại\",\"Body\":\"\\\"Xôi dẻo, đậu xanh bùi, hành phi giòn — ăn sáng ở đây thành thói quen của cả nhà tôi rồi. Gói nào cũng nóng hổi, đầy đặn.\\\"\",\"Source\":\"Chị Lan Anh, khách hàng\"}]",
                     "Ghé thăm quán",
-                    "Số 1, ngõ 1 Phú Thượng, Tây Hồ, Hà Nội",
-                    "0901 234 567",
-                    "xinchao@xoiphuthuong.vn",
+                    "Số 2A,ngách 3 Ngõ 277 Xuân Đỉnh, Từ Liêm, Hà Nội",
+                    "0389 245 468",
+                    "admin@xoihuyen.vn",
                     "Đặt món ngay",
                     new DateTimeOffset(new DateTime(2026, 10, 14, 0, 0, 0, DateTimeKind.Utc), TimeSpan.Zero)
                 });
