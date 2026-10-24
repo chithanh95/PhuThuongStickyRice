@@ -131,6 +131,7 @@ namespace PhuThuongStickyRice.Application.Customer
             var user = await GetCurrentUserAsync();
             var dto = new CustomerProfileDto();
             dto.PhoneNumber = user.PhoneNumber;
+            dto.Email = user.Email;
             dto.FullName = await GetFullNameAsync(user.Id);
             ParseTaste(user.TastePreferences, dto);
             dto.DateOfBirth = user.DateOfBirth;
@@ -249,6 +250,14 @@ namespace PhuThuongStickyRice.Application.Customer
                     user.DateOfBirth = dob;
                     user.DateOfBirthUpdatedAt = DateTimeOffset.UtcNow;
                 }
+            }
+
+            // Họ tên: trang tài khoản gửi kèm trong cùng DTO để khách tự
+            // bổ sung/sửa (lưu dạng claim qua SetFullNameAsync). null =
+            // khách không đổi tên; có giá trị thì đồng bộ claim.
+            if (dto.FullName != null)
+            {
+                await SetFullNameAsync(user.Id, dto.FullName);
             }
 
             await _users.UpdateAsync(user);

@@ -57,6 +57,14 @@
             <div class="card-body">
                 <h5 class="card-title">👤 Thông tin của tôi</h5>
                 <div class="tk-form-section">
+                    @* Họ tên sửa được tại đây (lưu dạng claim fullName): tài
+                       khoản tạo trước 2026-10-23 chưa có tên nên checkout
+                       không tự điền được — khách bổ sung 1 lần là xong. *@
+                    <div class="form-group tk-form-narrow">
+                        <label for="tk-fullname">Họ tên</label>
+                        <input id="tk-fullname" class="form-control" @bind="_profile.FullName" placeholder="VD: Nguyễn Văn A" autocomplete="name" />
+                        <small class="text-muted">Tên này sẽ tự điền ở bước thanh toán khi bạn đặt hàng.</small>
+                    </div>
                     <p class="mb-1"><strong>Số điện thoại:</strong> @_userName</p>
                     @if (!string.IsNullOrWhiteSpace(_email))
                     {
@@ -90,31 +98,6 @@
                                 : _profile.DateOfBirthChangeHint)
                         </small>
                     </div>
-                </div>
-                <div class="tk-form-section">
-                    <h6 class="tk-section-title">🍜 Khẩu vị của tôi</h6>
-                    <p class="text-muted small">Quán sẽ nhớ khẩu vị này và tự điền vào ghi chú mỗi lần bạn đặt hàng.</p>
-                    <div class="mb-2">
-                        @foreach (var tag in _tastePresets)
-                        {
-                            var currentTag = tag;
-                            <button type="button"
-                                    class="btn btn-sm mr-2 mb-2 @(_selectedTags.Contains(currentTag) ? "btn-warning" : "btn-outline-secondary")"
-                                    aria-pressed="@_selectedTags.Contains(currentTag)"
-                                    @onclick="() => ToggleTag(currentTag)">@currentTag</button>
-                        }
-                    </div>
-                    <div class="input-group mb-2 tk-form-narrow tk-tag-add">
-                        <input class="form-control" placeholder="Thêm khẩu vị khác..." aria-label="Thêm khẩu vị khác" @bind="_customTag" />
-                        <div class="input-group-append">
-                            <button class="btn btn-outline-primary" @onclick="AddCustomTag">Thêm</button>
-                        </div>
-                    </div>
-                    <div class="form-group tk-form-narrow">
-                        <label for="tk-taste-note">Ghi chú thêm</label>
-                        <input id="tk-taste-note" class="form-control" @bind="_profile.TasteNote" placeholder="VD: xôi dẻo một chút" />
-                    </div>
-
                 </div>
                 <div class="tk-form-section">
                     <div class="d-flex justify-content-between align-items-center mb-3">
@@ -204,6 +187,31 @@
                             </div>
                         }
                     }
+                </div>
+                <div class="tk-form-section">
+                    <h6 class="tk-section-title">🍜 Khẩu vị của tôi</h6>
+                    <p class="text-muted small">Quán sẽ nhớ khẩu vị này và tự điền vào ghi chú mỗi lần bạn đặt hàng.</p>
+                    <div class="mb-2">
+                        @foreach (var tag in _tastePresets)
+                        {
+                            var currentTag = tag;
+                            <button type="button"
+                                    class="btn btn-sm mr-2 mb-2 @(_selectedTags.Contains(currentTag) ? "btn-warning" : "btn-outline-secondary")"
+                                    aria-pressed="@_selectedTags.Contains(currentTag)"
+                                    @onclick="() => ToggleTag(currentTag)">@currentTag</button>
+                        }
+                    </div>
+                    <div class="input-group mb-2 tk-form-narrow tk-tag-add">
+                        <input class="form-control" placeholder="Thêm khẩu vị khác..." aria-label="Thêm khẩu vị khác" @bind="_customTag" />
+                        <div class="input-group-append">
+                            <button class="btn btn-outline-primary" @onclick="AddCustomTag">Thêm</button>
+                        </div>
+                    </div>
+                    <div class="form-group tk-form-narrow">
+                        <label for="tk-taste-note">Ghi chú thêm</label>
+                        <input id="tk-taste-note" class="form-control" @bind="_profile.TasteNote" placeholder="VD: xôi dẻo một chút" />
+                    </div>
+
                 </div>
                 @if (!string.IsNullOrEmpty(_profileMsg))
                 {

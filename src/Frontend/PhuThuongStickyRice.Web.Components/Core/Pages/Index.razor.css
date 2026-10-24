@@ -218,6 +218,20 @@
     flex-direction: column;
 }
 
+/* Logo đầy đủ (có chữ trong ảnh) — chỉ hiện ở PC ≥992px thay cho logo
+   tròn + chữ HTML, đồng bộ header shop (user chốt 2026-10-24). */
+.sg-logo-full {
+    display: none;
+    height: 56px;
+    width: auto;
+    flex-shrink: 0;
+}
+
+@media (min-width: 992px) {
+    .sg-logo-full { display: block; }
+    .sg-logo-img, .sg-logo-text { display: none; }
+}
+
 .sg-footer-logo-img {
     width: 54px;
     height: 54px;

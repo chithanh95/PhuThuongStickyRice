@@ -1273,6 +1273,14 @@ else
                     {
                         _order.CustomerPhone = profile.PhoneNumber.Trim();
                     }
+                    // Email cũng lấy từ tài khoản (user báo 2026-10-24: đã
+                    // đăng nhập thì mọi thông tin người đặt phải tự điền từ
+                    // tài khoản — chỉ khi đặt hộ mới cần sửa lại).
+                    if (string.IsNullOrWhiteSpace(_order.CustomerEmail)
+                        && !string.IsNullOrWhiteSpace(profile.Email))
+                    {
+                        _order.CustomerEmail = profile.Email.Trim();
+                    }
                 }
 
                 // Item 243: tự điền địa chỉ mặc định để nút "đặt 1 chạm"

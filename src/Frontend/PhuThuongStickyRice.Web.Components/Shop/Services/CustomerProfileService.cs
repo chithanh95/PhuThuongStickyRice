@@ -68,6 +68,9 @@ namespace PhuThuongStickyRice.Web.Components.Shop.Services
         /// <summary>SĐT của tài khoản — checkout tự điền.</summary>
         public string PhoneNumber { get; set; }
 
+        /// <summary>Email của tài khoản — checkout tự điền ô email.</summary>
+        public string Email { get; set; }
+
         public List<string> TasteTags { get; set; } = new List<string>();
 
         public string TasteNote { get; set; }

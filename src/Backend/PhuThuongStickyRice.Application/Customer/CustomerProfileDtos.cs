@@ -21,6 +21,13 @@ namespace PhuThuongStickyRice.Application.Customer
         /// <summary>SĐT của tài khoản (User.PhoneNumber) — checkout tự điền ô SĐT.</summary>
         public string PhoneNumber { get; set; }
 
+        /// <summary>
+        /// Email của tài khoản (User.Email) — checkout tự điền ô email cho
+        /// khách đã đăng nhập (bổ sung 2026-10-24: trước đây hồ sơ không trả
+        /// email nên khách đăng nhập vẫn phải gõ lại email ở checkout).
+        /// </summary>
+        public string Email { get; set; }
+
         public List<string> TasteTags { get; set; } = new List<string>();
 
         public string TasteNote { get; set; }
@@ -40,9 +47,17 @@ namespace PhuThuongStickyRice.Application.Customer
         public DateTime? BirthdayGiftExpiresAt { get; set; }
     }
 
-    /// <summary>Input khách tự cập nhật hồ sơ: khẩu vị yêu thích và ngày sinh.</summary>
+    /// <summary>Input khách tự cập nhật hồ sơ: họ tên, khẩu vị yêu thích và ngày sinh.</summary>
     public class UpdateCustomerProfileDto
     {
+        /// <summary>
+        /// Họ tên khách tự bổ sung/sửa ở trang tài khoản (lưu dạng claim
+        /// "fullName" qua SetFullNameAsync). null = giữ nguyên tên hiện
+        /// tại; tài khoản tạo trước 2026-10-23 chưa có tên nên checkout
+        /// không tự điền được cho tới khi khách bổ sung ở đây.
+        /// </summary>
+        public string FullName { get; set; }
+
         public List<string> TasteTags { get; set; }
 
         public string TasteNote { get; set; }

@@ -748,6 +748,20 @@ html.dark .shp-back:hover {
     flex-direction: column;
 }
 
+/* Logo đầy đủ (có chữ trong ảnh) — mặc định ẩn, chỉ hiện ở PC ≥992px
+   thay cho logo tròn + chữ HTML (user chốt 2026-10-24). */
+.shp-logo-full {
+    display: none;
+    height: 56px;
+    width: auto;
+    flex-shrink: 0;
+}
+
+@media (min-width: 992px) {
+    .shp-logo-full { display: block; }
+    .shp-logo-img, .shp-logo-text { display: none; }
+}
+
 .shp-footer-logo-img {
     width: 54px;
     height: 54px;
