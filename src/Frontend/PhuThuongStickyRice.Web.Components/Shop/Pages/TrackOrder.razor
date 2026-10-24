@@ -231,30 +231,6 @@
                         }
                     </small>
                 </p>
-                <div class="form-row align-items-end mb-2">
-                    <div class="col-auto">
-                        <label for="to-birthday"><small>Ngày sinh <small class="text-muted">(để nhận voucher sinh nhật)</small></small></label>
-                        <input id="to-birthday" type="date" class="form-control form-control-sm" @bind="_birthdayInput" />
-                    </div>
-                    <div class="col-auto">
-                        <label for="to-birthday-otp"><small>Mã OTP <small class="text-muted">(gửi về SĐT của đơn)</small></small></label>
-                        <div class="input-group input-group-sm">
-                            <input id="to-birthday-otp" class="form-control" @bind="_birthdayOtpCode" placeholder="6 số" inputmode="numeric" maxlength="6" />
-                            <div class="input-group-append">
-                                <button class="btn btn-outline-primary" @onclick="SendBirthdayOtpAsync" disabled="@_birthdayOtpBusy">Gửi mã</button>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-auto">
-                        <button class="btn btn-sm btn-outline-secondary" @onclick="SaveBirthday" disabled="@_savingBirthday">
-                            @(_savingBirthday ? "Đang lưu..." : "Lưu ngày sinh")
-                        </button>
-                    </div>
-                    @if (!string.IsNullOrEmpty(_birthdayMessage))
-                    {
-                        <div class="col-12"><small class="@(_birthdayIsError ? "text-danger" : "text-success")">@_birthdayMessage</small></div>
-                    }
-                </div>
             }
             @if (_order.RequiresDeposit && _order.PaymentMethod == "BankTransfer" && _order.PaymentStatus == "Unpaid")
             {
@@ -772,32 +748,47 @@
         </div>
     </div>
 
-    @* Item 123: share a photo of the received dish → moderation → public gallery. *@
+    @* Item 123: share a photo of the received dish → moderation → public gallery.
+       Bố cục sửa 2026-10-24 (user chê xấu): lưới 2 cột — dropzone gọn bên
+       trái, cao bằng cột phải, đã chọn ảnh thì xem trước ngay trong khung;
+       cột phải = label + ô chú thích cỡ thường + hàng ghi chú duyệt ảnh và
+       nút Chia sẻ 48px. Mobile xếp dọc, nút full-width (CSS .to-share-*). *@
     <div class="card mb-3">
         <div class="card-header py-2"><strong>📸 Chia sẻ ảnh món bạn đã nhận</strong></div>
-        <div class="card-body py-2">
+        <div class="card-body">
             @if (!string.IsNullOrEmpty(_photoMessage))
             {
-                <div class="alert @(_photoError ? "alert-danger" : "alert-success") py-2 mb-2">@_photoMessage</div>
+                <div class="alert @(_photoError ? "alert-danger" : "alert-success") py-2 mb-3">@_photoMessage</div>
             }
-            <div class="form-row align-items-end">
-                <div class="col-md-5 mb-2 shop-dropzone-wrap">
-                    <label for="share-photo-input" class="shop-dropzone">
-                        <div class="shop-dropzone-icon"><i class="fa-solid fa-cloud-arrow-up"></i></div>
-                        <div class="shop-dropzone-text">Thả ảnh vào đây hoặc bấm để chọn.</div>
+            <div class="to-share-layout">
+                <div class="shop-dropzone-wrap to-share-photo">
+                    <label for="share-photo-input" class="shop-dropzone to-share-dropzone">
+                        @if (!string.IsNullOrEmpty(_photoPreviewUrl))
+                        {
+                            <img src="@_photoPreviewUrl" alt="Ảnh bạn đã chọn" class="to-share-preview" />
+                            <span class="to-share-change">Bấm để chọn ảnh khác</span>
+                        }
+                        else
+                        {
+                            <span class="shop-dropzone-icon"><i class="fa-solid fa-cloud-arrow-up"></i></span>
+                            <span class="shop-dropzone-text">Thả ảnh vào đây hoặc bấm để chọn.</span>
+                        }
                     </label>
                     <InputFile id="share-photo-input" OnChange="OnPhotoSelected" accept="image/*" style="position:absolute; width:1px; height:1px; opacity:0; overflow:hidden;" />
-                    <small class="text-muted">Ảnh sẽ được duyệt trước khi hiện ở gallery.</small>
                 </div>
-                <div class="col-md-5 mb-2">
-                    <input class="form-control form-control-sm" @bind="_photoCaption" maxlength="300"
-                           placeholder="Chú thích (tùy chọn) — vd: Xôi gấc dẻo thơm!" aria-label="Chú thích cho ảnh" />
-                </div>
-                <div class="col-md-2 mb-2">
-                    <button class="btn btn-sm btn-primary btn-block" @onclick="UploadPhotoAsync"
-                            disabled="@(_uploadingPhoto || _selectedPhoto == null)">
-                        @(_uploadingPhoto ? "Đang tải..." : "Chia sẻ")
-                    </button>
+                <div class="to-share-side">
+                    <div class="form-group mb-2">
+                        <label for="share-photo-caption"><small><strong>Chú thích</strong> <span class="text-muted">(tùy chọn)</span></small></label>
+                        <input id="share-photo-caption" class="form-control to-share-caption" @bind="_photoCaption" maxlength="300"
+                               placeholder="VD: Xôi gấc dẻo thơm!" aria-label="Chú thích cho ảnh" />
+                    </div>
+                    <div class="to-share-actions">
+                        <small class="text-muted to-share-note">Ảnh sẽ được duyệt trước khi hiện ở gallery.</small>
+                        <button class="btn btn-primary to-share-btn" @onclick="UploadPhotoAsync"
+                                disabled="@(_uploadingPhoto || _selectedPhoto == null)">
+                            @(_uploadingPhoto ? "Đang tải..." : "Chia sẻ")
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -866,14 +857,6 @@
 
     // Loyalty profile.
     private LoyaltyAccountModel _loyalty;
-    private DateTime? _birthdayInput;
-    private bool _savingBirthday;
-    private string _birthdayMessage;
-    private bool _birthdayIsError;
-    // OTP đổi ngày sinh (purpose birthday-change): server bắt buộc mã gửi
-    // về SĐT của đơn mới cho đổi.
-    private string _birthdayOtpCode;
-    private bool _birthdayOtpBusy;
 
     // Item 119: address book.
     private System.Collections.Generic.List<PhuThuongStickyRice.Web.Components.Admin.Models.AddressBookModel> _addresses;
@@ -1371,9 +1354,6 @@
         ResetEditStates(); // reset cả _editingLines/_editingAddress/_editingContact/_editQuantities
         _editAddressError = null;
         _loyalty = null;
-        _birthdayInput = null;
-        _birthdayMessage = null;
-        _birthdayOtpCode = null;
         _order = null;
         _bankInfo = null;
         _addresses = null;
@@ -1609,7 +1589,6 @@
         _editError = null;
         _deleteAddressTarget = null;
         _deleteAddressOtpCode = null;
-        _birthdayOtpCode = null;
         StopPolling(); // dừng poll đơn A trước khi nạp đơn B
         _order = order;
         _reorderMessage = null;
@@ -1648,9 +1627,8 @@
             _bankInfo = await AwaitFailSoftAsync(bankInfoTask, () => new BankTransferInfoModel());
         }
 
-        // Loyalty profile for the order phone (points, tier, birthday).
+        // Loyalty profile for the order phone (points, tier).
         _loyalty = await AwaitFailSoftAsync(loyaltyTask, () => null);
-        _birthdayInput = _loyalty?.DateOfBirth;
 
         // Item 119: address book for the order phone (same fallback as
         // LoadAddressBookAsync — fail-soft).
@@ -1899,75 +1877,6 @@
         finally
         {
             _deleteAddressOtpBusy = false;
-        }
-    }
-
-    /// <summary>Gửi mã OTP (purpose birthday-change) về SĐT của đơn để đổi ngày sinh.</summary>
-    private async Task SendBirthdayOtpAsync()
-    {
-        _birthdayMessage = null;
-        _birthdayOtpBusy = true;
-        try
-        {
-            await ShopEngagementService.SendPhoneOtpAsync(_order.CustomerPhone, "birthday-change");
-            _birthdayMessage = "Đã gửi mã OTP về SĐT của bạn. Nhập mã rồi bấm \"Lưu ngày sinh\".";
-            _birthdayIsError = false;
-        }
-        catch (Exception ex)
-        {
-            _birthdayMessage = ex.Message;
-            _birthdayIsError = true;
-        }
-        finally
-        {
-            _birthdayOtpBusy = false;
-        }
-    }
-
-    private async Task SaveBirthday()
-    {
-        _birthdayMessage = null;
-        _birthdayIsError = false;
-        if (_order == null || _birthdayInput == null)
-        {
-            return;
-        }
-
-        // Server bắt buộc OTP (purpose birthday-change) — chưa nhập mã thì
-        // nhắc khách xin mã trước thay vì gọi API chắc chắn bị 400.
-        if (string.IsNullOrWhiteSpace(_birthdayOtpCode))
-        {
-            _birthdayMessage = "Vui lòng bấm \"Gửi mã\" để nhận mã OTP về SĐT, nhập mã rồi bấm \"Lưu ngày sinh\".";
-            _birthdayIsError = true;
-            return;
-        }
-
-        _savingBirthday = true;
-        try
-        {
-            _loyalty = await ShopEngagementService.UpdateBirthdayAsync(
-                _order.CustomerPhone, _birthdayInput, _birthdayOtpCode.Trim());
-            _birthdayOtpCode = null;
-            _birthdayMessage = "Đã lưu ngày sinh. Bạn sẽ nhận voucher vào đúng ngày sinh nhật!";
-        }
-        catch (InvalidOperationException ex)
-        {
-            // Lỗi từ server kèm thông báo tiếng Việt (OTP sai/hết hạn...)
-            // — hiện nguyên văn để khách biết phải làm gì tiếp.
-            _birthdayMessage = ex.Message;
-            _birthdayIsError = true;
-        }
-        catch (Exception)
-        {
-            // Bug-hunt 2026-10-19: trước đây lỗi API bị nuốt im lặng
-            // (message = null) — khách tưởng đã lưu trong khi ngày sinh
-            // chưa được ghi, voucher sinh nhật không kích hoạt.
-            _birthdayMessage = "Không lưu được ngày sinh. Vui lòng thử lại.";
-            _birthdayIsError = true;
-        }
-        finally
-        {
-            _savingBirthday = false;
         }
     }
 
@@ -2536,15 +2445,45 @@
     // ---------- Item 123: share a photo ----------
 
     private InputFileChangeEventArgs _selectedPhoto;
+    private string _photoPreviewUrl;
     private string _photoCaption;
     private bool _uploadingPhoto;
     private string _photoMessage;
     private bool _photoError;
 
-    private void OnPhotoSelected(InputFileChangeEventArgs e)
+    /// <summary>
+    /// Chọn ảnh chia sẻ: tạo thêm ảnh xem trước (data URL, cùng pattern
+    /// ảnh đánh giá) để khách thấy ngay ảnh mình đã chọn trong khung
+    /// dropzone — trước đây chọn xong khung không đổi, khách không biết
+    /// ảnh đã vào chưa. Xem trước lỗi thì bỏ qua, tải lên vẫn chạy.
+    /// </summary>
+    private async Task OnPhotoSelected(InputFileChangeEventArgs e)
     {
         _selectedPhoto = e;
         _photoMessage = null;
+        _photoPreviewUrl = null;
+        var file = e.FileCount > 0 ? e.File : null;
+        if (file == null)
+        {
+            return;
+        }
+
+        try
+        {
+            using var stream = file.OpenReadStream(maxAllowedSize: 512 * 1024);
+            using var ms = new System.IO.MemoryStream();
+            await stream.CopyToAsync(ms);
+            var mime = string.IsNullOrWhiteSpace(file.ContentType)
+                ? "image/jpeg"
+                : file.ContentType;
+            _photoPreviewUrl =
+                $"data:{mime};base64,{Convert.ToBase64String(ms.ToArray())}";
+        }
+        catch
+        {
+            // Xem trước là phụ — lỗi thì thôi, ảnh vẫn tải lên bình thường.
+            _photoPreviewUrl = null;
+        }
     }
 
     /// <summary>Item 44: review photo selection + thumbnail preview (data URL).</summary>
@@ -2598,6 +2537,7 @@
             _photoMessage = "Cảm ơn bạn! Ảnh đang chờ duyệt và sẽ sớm hiện ở gallery.";
             _photoCaption = null;
             _selectedPhoto = null;
+            _photoPreviewUrl = null;
         }
         catch (Exception ex)
         {

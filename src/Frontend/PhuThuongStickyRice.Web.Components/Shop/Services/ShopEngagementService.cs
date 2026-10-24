@@ -29,7 +29,7 @@ namespace PhuThuongStickyRice.Web.Components.Shop.Services
 
         /// <summary>
         /// Xin mã OTP 6 số gửi về SĐT cho 1 thao tác nhạy cảm (purpose:
-        /// "address-delete" / "birthday-change" / "order-history"). Mã có
+        /// "address-delete" / "order-history" / "checkout-spend"). Mã có
         /// hiệu lực 5 phút, dùng 1 lần. Ném
         /// <see cref="InvalidOperationException"/> kèm thông báo tiếng Việt
         /// của server khi xin mã thất bại (SĐT sai định dạng, quá 3
@@ -148,36 +148,6 @@ namespace PhuThuongStickyRice.Web.Components.Shop.Services
             }
 
             return false;
-        }
-
-        /// <summary>
-        /// Cập nhật ngày sinh của tài khoản tích điểm theo SĐT. Bắt buộc
-        /// kèm mã OTP đã gửi về chính SĐT đó (purpose "birthday-change",
-        /// xin mã qua <see cref="SendPhoneOtpAsync"/>) — server từ chối
-        /// (400) khi thiếu/sai mã; thông báo lỗi tiếng Việt của server
-        /// được ném ra trong <see cref="InvalidOperationException"/> để
-        /// trang hiển thị cho khách.
-        /// </summary>
-        /// <param name="phone">Số điện thoại khách hàng.</param>
-        /// <param name="dateOfBirth">Ngày sinh mới.</param>
-        /// <param name="otpCode">Mã OTP 6 số khách nhập.</param>
-        /// <returns>Tài khoản tích điểm sau khi cập nhật.</returns>
-        public async Task<LoyaltyAccountModel> UpdateBirthdayAsync(string phone, DateTime? dateOfBirth, string otpCode)
-        {
-            var url = $"api/loyalty/by-phone/birthday?phone={Uri.EscapeDataString(phone ?? string.Empty)}"
-                + $"&otpCode={Uri.EscapeDataString(otpCode ?? string.Empty)}";
-            using var request = new HttpRequestMessage(HttpMethod.Put, url);
-            request.Content = new { DateOfBirth = dateOfBirth }.AsJsonContent();
-
-            using var response = await _httpClient.SendAsync(request);
-            if (!response.IsSuccessStatusCode)
-            {
-                var body = await response.Content.ReadAsStringAsync();
-                throw new InvalidOperationException(
-                    ParseServerErrorMessage(body) ?? "Không lưu được ngày sinh. Vui lòng thử lại.");
-            }
-
-            return await response.Content.ReadAs<LoyaltyAccountModel>();
         }
 
         /// <summary>

@@ -141,6 +141,12 @@ do admin upload). DataProtection keys lưu trong database nên nhiều instance 
 
 ## Nhật ký thay đổi
 
+### 2026-10-24 (tối, tiếp) — Bỏ lưu ngày sinh ở tra cứu đơn + sửa bố cục card chia sẻ ảnh + họ tên checkout readonly
+
+- **Bỏ hẳn khối "Ngày sinh + mã OTP + Lưu ngày sinh" ở trang tra cứu đơn** (user chốt): khách có tài khoản sửa ngày sinh ở trang Tài khoản (vẫn giữ luật đổi 1 lần/năm). Dọn toàn bộ chuỗi theo sau: method FE, endpoint `PUT api/loyalty/by-phone/birthday`, `LoyaltyAppService.UpdateBirthdayAsync`, DTO `UpdateBirthdayInput` và mục đích OTP `birthday-change` (các mục đích OTP khác giữ nguyên).
+- **Card "📸 Chia sẻ ảnh món bạn đã nhận" (trang tra cứu đơn) làm lại bố cục** (user chê xấu): lưới 2 cột — khung chọn ảnh gọn bên trái cao bằng cột phải, **đã chọn ảnh thì xem trước ngay trong khung**; cột phải gồm ô chú thích cỡ thường và hàng ghi chú duyệt ảnh + nút "Chia sẻ" cao 48px. Mobile xếp dọc, nút rộng hết hàng. Trước đây ô chú thích + nút cỡ nhỏ dính đáy cạnh khung ảnh cao 120px, lệch hẳn về một phía.
+- **Checkout: ô Họ tên READONLY khi đã đăng nhập** và SĐT trên form là SĐT tài khoản (tên lấy từ tài khoản như trang tài khoản). Đổi sang SĐT khác (đặt hộ) thì ô tự mở lại cho nhập tên người nhận; khách vãng lai không đổi.
+
 ### 2026-10-24 (tối) — Trang tài khoản: họ tên chỉ hiển thị + tab Đơn hàng báo lỗi rõ
 
 - **Họ tên ở tab Hồ sơ chuyển sang ô READONLY** (user chốt): vẫn hiển thị trong ô như trước nhưng không sửa được; tên load từ tài khoản — claim "fullName" lưu lúc đăng ký; tài khoản cũ chưa có claim thì server tự lấy **tên trên đơn hàng gần nhất của SĐT tài khoản** để vẫn hiển thị được (trước đây các tài khoản này hiện ô trống bắt nhập lại). Tên hiển thị này cũng là tên checkout tự điền. Khi lưu hồ sơ (khẩu vị/ngày sinh), FE không gửi họ tên lên nữa để không ghi đè tên tài khoản.

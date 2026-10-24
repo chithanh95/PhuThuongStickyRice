@@ -32,9 +32,6 @@ namespace PhuThuongStickyRice.Application.Loyalty
         /// </summary>
         Task<PublicLoyaltySummaryDto?> GetPublicSummaryByPhoneAsync(string phone);
 
-        /// <summary>Public: khách tự cập nhật ngày sinh của mình (trang tra cứu đơn "hồ sơ").</summary>
-        Task<LoyaltyAccountDto> UpdateBirthdayAsync(string phone, UpdateBirthdayInput input);
-
         /// <summary>Admin: danh sách tài khoản phân trang, tìm kiếm theo SĐT.</summary>
         Task<List<LoyaltyAccountDto>> GetListAsync(string searchTerm);
 
@@ -242,25 +239,6 @@ namespace PhuThuongStickyRice.Application.Loyalty
                 CustomerName = customerName,
                 Tier = full.Tier
             };
-        }
-
-        /// <summary>
-        /// Khách tự cập nhật ngày sinh của mình (public — trang tra cứu đơn,
-        /// mục "hồ sơ"). Tài khoản chưa có thì tạo mới. Chỉ lưu phần ngày
-        /// (bỏ giờ) để so sánh sinh nhật hàng năm chính xác.
-        /// </summary>
-        /// <param name="phone">SĐT khách hàng.</param>
-        /// <param name="input">Ngày sinh mới.</param>
-        /// <returns>Tài khoản sau khi cập nhật.</returns>
-        [AllowAnonymous]
-        public virtual async Task<LoyaltyAccountDto> UpdateBirthdayAsync(string phone, UpdateBirthdayInput input)
-        {
-            var account = await GetOrCreateAsync(phone);
-            // Chỉ lấy phần ngày (bỏ giờ) để so sánh sinh nhật hàng năm chính xác.
-            account.DateOfBirth = input?.DateOfBirth?.Date;
-            account.UpdatedAt = DateTime.UtcNow;
-            await _accounts.UpdateAsync(account, autoSave: true);
-            return await MapToDtoAsync(account);
         }
 
         /// <summary>

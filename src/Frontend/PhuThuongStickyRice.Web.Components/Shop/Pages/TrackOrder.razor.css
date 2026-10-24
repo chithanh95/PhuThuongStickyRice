@@ -556,6 +556,84 @@ html.dark .shop-dropzone:focus-within {
 }
 /* ===== END UIUX run 14:58 - Agent1 FIX 2 ===== */
 
+/* ===== 2026-10-24 — Bố cục card "Chia sẻ ảnh món bạn đã nhận" (user chê xấu) =====
+   Trước đây: form-row align-items-end 3 cột — dropzone cao 120px trong
+   khi ô chú thích + nút Chia sẻ (đều cỡ sm) dính xuống đáy, khoảng trống
+   lớn phía trên, ô/nút quá nhỏ với khách lớn tuổi, chọn ảnh xong không
+   có xem trước. Nay: lưới 2 cột — dropzone trái cao bằng cột phải; cột
+   phải gồm ô chú thích cỡ thường (48px) và hàng dưới: ghi chú duyệt ảnh
+   (trái) + nút Chia sẻ 48px (phải). Ảnh đã chọn xem trước ngay trong
+   khung dropzone. Mobile (<768px): xếp dọc, nút full-width. */
+.to-share-layout {
+    display: flex;
+    gap: 16px;
+    align-items: stretch;
+}
+.to-share-photo {
+    flex: 0 0 300px;
+    position: relative;
+}
+.to-share-dropzone {
+    height: 100%;
+    min-height: 148px;
+}
+.to-share-preview {
+    max-width: 100%;
+    max-height: 150px;
+    border-radius: 8px;
+    object-fit: cover;
+}
+.to-share-change {
+    font-size: 13px;
+    font-weight: 600;
+    color: #7a6fbe;
+}
+html.dark .to-share-change {
+    color: #a89ee0;
+}
+.to-share-side {
+    flex: 1 1 auto;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+.to-share-caption {
+    min-height: 48px;
+    font-size: 16px;
+}
+.to-share-actions {
+    margin-top: auto;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+.to-share-note {
+    flex: 1 1 auto;
+}
+.to-share-btn {
+    min-height: 48px;
+    min-width: 150px;
+    font-size: 16px;
+    font-weight: 600;
+}
+@media (max-width: 767.98px) {
+    .to-share-layout {
+        flex-direction: column;
+    }
+    .to-share-photo {
+        flex: none;
+    }
+    .to-share-actions {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    .to-share-btn {
+        width: 100%;
+    }
+}
+/* ===== END 2026-10-24 share-photo layout ===== */
+
 /* ===== UIUX run 14:58 — Agent1 Mobile =====
    FIX 4 — h1 "Tra cứu đơn hàng" quá to trên mobile (đồng bộ với
    /shop 1.6rem, /cart và /checkout 1.75rem): 40px → 28px.

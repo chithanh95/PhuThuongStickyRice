@@ -47,9 +47,6 @@ namespace PhuThuongStickyRice.WebAPI.Services
             /// <summary>Xóa 1 địa chỉ trong sổ địa chỉ theo SĐT.</summary>
             public const string AddressDelete = "address-delete";
 
-            /// <summary>Đổi ngày sinh của tài khoản loyalty theo SĐT.</summary>
-            public const string BirthdayChange = "birthday-change";
-
             /// <summary>Xem chi tiết đầy đủ lịch sử đơn hàng theo SĐT.</summary>
             public const string OrderHistory = "order-history";
 
@@ -63,7 +60,6 @@ namespace PhuThuongStickyRice.WebAPI.Services
             new Dictionary<string, string>
             {
                 [Purposes.AddressDelete] = "xóa địa chỉ đã lưu",
-                [Purposes.BirthdayChange] = "đổi ngày sinh",
                 [Purposes.OrderHistory] = "xem chi tiết lịch sử đơn hàng",
                 [Purposes.CheckoutSpend] = "xác nhận thanh toán bằng ví/điểm",
             };

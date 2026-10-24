@@ -32,8 +32,8 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
 
         /// <summary>
         /// Public: gửi mã OTP 6 số về SĐT cho 1 mục đích xác thực
-        /// (address-delete / birthday-change / order-history /
-        /// checkout-spend). SĐT sai định dạng, mục đích lạ hoặc xin mã quá
+        /// (address-delete / order-history / checkout-spend).
+        /// SĐT sai định dạng, mục đích lạ hoặc xin mã quá
         /// 3 lần/giờ trả 400 kèm thông báo tiếng Việt.
         /// </summary>
         /// <param name="request">SĐT nhận mã và mục đích xác thực.</param>

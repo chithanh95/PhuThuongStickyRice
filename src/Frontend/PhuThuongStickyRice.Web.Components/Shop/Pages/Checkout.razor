@@ -416,7 +416,12 @@ else
                            StateHasChanged chen ngang (vd tra cứu SĐT hoàn tất)
                            sẽ render lại giá trị cũ và XÓA chữ đang gõ dở, khách
                            tưởng ô bị khóa không sửa được (user báo 2026-10-23). *@
+                        @* Đã đăng nhập + SĐT trên form là SĐT tài khoản: họ
+                           tên lấy từ tài khoản nên khóa readonly (user chốt
+                           2026-10-24, giống trang tài khoản). Đổi sang SĐT
+                           khác (đặt hộ) thì ô tự mở lại cho nhập. *@
                         <input id="co-name" class="form-control @FieldClass(_nameError)" @bind="_order.CustomerName" @bind:event="oninput" placeholder="Nguyễn Văn A"
+                               readonly="@IsNameReadonly"
                                aria-invalid="@(!string.IsNullOrEmpty(_nameError) ? "true" : null)"
                                aria-describedby="@(!string.IsNullOrEmpty(_nameError) ? "co-name-error" : null)" />
                         @if (!string.IsNullOrEmpty(_nameError))
@@ -1004,6 +1009,9 @@ else
 
     // S25: xác thực OTP khi khách chưa đăng nhập dùng ví/điểm của SĐT.
     private bool _isLoggedIn;
+    // SĐT của tài khoản đang đăng nhập (JWT username) — ô họ tên khóa
+    // readonly khi SĐT trên form trùng số này (xem IsNameReadonly).
+    private string _accountPhone;
     private string _spendOtp;
     private string _spendOtpMessage;
     private bool _spendOtpIsError;
@@ -1243,6 +1251,7 @@ else
             {
                 _savedAddresses = await CustomerAddressService.GetMineAsync();
                 var phone = authState.User.Identity.Name;
+                _accountPhone = phone;
                 if (PhoneValidation.IsValidVnPhone(phone) && string.IsNullOrWhiteSpace(_order.CustomerPhone))
                 {
                     _order.CustomerPhone = phone;
@@ -1703,6 +1712,31 @@ else
                 + $"?amount={amount}&addInfo={Uri.EscapeDataString(_placedOrder.OrderNumber)}"
                 + $"&accountName={Uri.EscapeDataString(_bankInfo.AccountName ?? string.Empty)}";
         }
+    }
+
+    /// <summary>
+    /// Ô họ tên khóa readonly khi khách ĐÃ ĐĂNG NHẬP và SĐT trên form
+    /// chính là SĐT tài khoản (user chốt 2026-10-24): tên lấy từ tài
+    /// khoản, không cho gõ lại ở checkout. Đổi SĐT sang số khác (đặt hộ)
+    /// thì ô tự mở lại cho nhập tên người nhận. Tên đang trống (tài khoản
+    /// chưa có tên ở nguồn nào) cũng để nhập tay để không chặn đặt hàng.
+    /// </summary>
+    private bool IsNameReadonly =>
+        _isLoggedIn
+        && !string.IsNullOrWhiteSpace(_order.CustomerName)
+        && !string.IsNullOrWhiteSpace(_accountPhone)
+        && DigitsOnly(_order.CustomerPhone) == DigitsOnly(_accountPhone);
+
+    /// <summary>
+    /// Chỉ giữ chữ số của SĐT để so khớp khoan dung định dạng; dạng quốc
+    /// tế 84xxxxxxxxx (11 số) quy về dạng nội địa 0xxxxxxxxx.
+    /// </summary>
+    /// <param name="phone">SĐT ở bất kỳ định dạng hiển thị nào.</param>
+    /// <returns>Chuỗi chữ số đã chuẩn hóa.</returns>
+    private static string DigitsOnly(string phone)
+    {
+        var digits = new string((phone ?? string.Empty).Where(char.IsDigit).ToArray());
+        return digits.StartsWith("84") && digits.Length == 11 ? "0" + digits[2..] : digits;
     }
 
     /// <summary>

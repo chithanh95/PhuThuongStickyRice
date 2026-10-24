@@ -31,7 +31,6 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
     {
         private readonly ILoyaltyAppService _loyaltyAppService;
         private readonly IDiscountAppService _discountAppService;
-        private readonly PhoneOtpService _phoneOtpService;
         private readonly ILogger<LoyaltyController> _logger;
 
         // Quà sinh nhật: prefix mã + mệnh giá (VND) + thời hạn dùng của
@@ -44,19 +43,15 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
         /// <summary>
         /// Khởi tạo controller điểm thành viên. <paramref name="loyaltyAppService"/>
         /// xử lý điểm/hạng/ngày sinh; <paramref name="discountAppService"/>
-        /// dùng để sinh voucher quà sinh nhật hàng loạt;
-        /// <paramref name="phoneOtpService"/> xác thực OTP cho thao tác nhạy
-        /// cảm theo SĐT (đổi ngày sinh).
+        /// dùng để sinh voucher quà sinh nhật hàng loạt.
         /// </summary>
         public LoyaltyController(
             ILoyaltyAppService loyaltyAppService,
             IDiscountAppService discountAppService,
-            PhoneOtpService phoneOtpService,
             ILogger<LoyaltyController> logger)
         {
             _loyaltyAppService = loyaltyAppService;
             _discountAppService = discountAppService;
-            _phoneOtpService = phoneOtpService;
             _logger = logger;
         }
 
@@ -145,38 +140,6 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
             var identityDigits = PhoneNumber.DigitsOnly(User.Identity.Name);
             return identityDigits.Length > 0
                 && PhoneNumber.PhonesMatch(identityDigits, phone);
-        }
-
-        /// <summary>
-        /// Public: khách tự cập nhật ngày sinh theo SĐT. Bắt buộc OTP gửi
-        /// về chính SĐT đó (purpose birthday-change, xin mã qua
-        /// POST api/phone-otp/send) — trước đây chỉ cần biết SĐT là đổi
-        /// được ngày sinh người khác (phá quà/voucher sinh nhật của họ).
-        /// Thiếu/sai mã trả 400 kèm thông báo tiếng Việt.
-        /// </summary>
-        [AllowAnonymous]
-        [HttpPut("by-phone/birthday")]
-        public async Task<ActionResult> UpdateBirthday(
-            [FromQuery] string phone,
-            [FromQuery] string otpCode,
-            [FromBody] UpdateBirthdayInput input,
-            CancellationToken cancellationToken = default)
-        {
-            var verify = await _phoneOtpService.VerifyAsync(
-                phone, PhoneOtpService.Purposes.BirthdayChange, otpCode);
-            if (!verify.Succeeded)
-            {
-                return BadRequest(new { message = verify.ErrorMessage });
-            }
-
-            try
-            {
-                return Ok(await _loyaltyAppService.UpdateBirthdayAsync(phone, input));
-            }
-            catch (DomainException ex)
-            {
-                return BadRequest(ex.Message);
-            }
         }
 
         /// <summary>

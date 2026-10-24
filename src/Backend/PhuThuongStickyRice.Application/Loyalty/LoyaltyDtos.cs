@@ -52,13 +52,6 @@ namespace PhuThuongStickyRice.Application.Loyalty.DTOs
         public string Reason { get; set; }
     }
 
-    /// <summary>Khách tự cập nhật ngày sinh của mình (dùng để tặng quà sinh nhật).</summary>
-    public class UpdateBirthdayInput
-    {
-        /// <summary>Ngày sinh mới; null để xóa ngày sinh đã lưu.</summary>
-        public DateTime? DateOfBirth { get; set; }
-    }
-
     /// <summary>
     /// Tóm tắt loyalty TỐI THIỂU trả cho caller ẩn danh theo SĐT: chỉ hạng
     /// thành viên và tên khách. Điểm, tổng chi tiêu, ngày sinh, mã giới
