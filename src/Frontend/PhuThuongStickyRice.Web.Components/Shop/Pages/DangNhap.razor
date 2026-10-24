@@ -44,6 +44,10 @@
             {
                 <div class="alert alert-success py-2" role="status">@_infoMessage</div>
             }
+            @if (!string.IsNullOrEmpty(_currentStaffName))
+            {
+                <div class="alert alert-info py-2" role="status">Bạn đang đăng nhập bằng tài khoản nhân viên <strong>@_currentStaffName</strong>. Đăng nhập tài khoản khách sẽ thay thế phiên đăng nhập hiện tại.</div>
+            }
 
             @if (_tab == "login")
             {
@@ -137,6 +141,9 @@
     private string _fullName;
     private string _error;
     private string _infoMessage;
+    // Tên phiên NHÂN VIÊN đang tồn tại (nếu có) — hiện ghi chú trên form
+    // để biết đăng nhập khách sẽ thay thế phiên hiện tại.
+    private string _currentStaffName;
     private bool _busy;
     private string _returnUrl;
     private bool _isDark;
@@ -149,7 +156,19 @@
             var authState = await AuthStateProvider.GetAuthenticationStateAsync();
             if (authState.User.Identity?.IsAuthenticated == true)
             {
-                Navigation.NavigateTo(SafeReturnUrl(_returnUrl));
+                var user = authState.User;
+                if (user.IsInRole("Admin") || user.IsInRole("Cashier") || user.IsInRole("Kitchen"))
+                {
+                    // Phiên NHÂN VIÊN: KHÔNG redirect (bản gương của fix
+                    // /login cùng ngày) — nhân viên mở trang này thường để
+                    // đăng nhập thử tài khoản khách, redirect mù sẽ đẩy họ
+                    // đi ngay không thấy form. Ở lại form + ghi chú rõ.
+                    _currentStaffName = user.Identity.Name;
+                }
+                else
+                {
+                    Navigation.NavigateTo(SafeReturnUrl(_returnUrl));
+                }
             }
         }
         catch (Exception)

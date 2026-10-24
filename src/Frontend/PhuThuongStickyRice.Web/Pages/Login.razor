@@ -27,6 +27,12 @@
             {
                 <div class="alert alert-danger">@_error</div>
             }
+            @if (!string.IsNullOrEmpty(_currentUserName))
+            {
+                <div class="alert alert-info">
+                    <small>Bạn đang đăng nhập bằng tài khoản khách <strong>@_currentUserName</strong>. Đăng nhập tài khoản nhân viên sẽ thay thế phiên đăng nhập hiện tại.</small>
+                </div>
+            }
 
             <div class="form-group">
                 <label class="login-label" for="login-username">Tên đăng nhập</label>
@@ -91,6 +97,9 @@
     private string _username;
     private string _password;
     private string _error;
+    // Tên phiên KHÁCH đang tồn tại trong trình duyệt (nếu có) — hiện ghi
+    // chú trên form để người dùng biết đăng nhập nhân viên sẽ thay phiên.
+    private string _currentUserName;
     private bool _loggingIn;
     private string _returnUrl;
     private bool _showHint = true;
@@ -120,7 +129,21 @@
         var authState = await AuthStateProvider.GetAuthenticationStateAsync();
         if (authState.User.Identity?.IsAuthenticated == true)
         {
-            Navigation.NavigateTo(string.IsNullOrWhiteSpace(_returnUrl) ? DefaultLanding(authState) : _returnUrl);
+            var user = authState.User;
+            if (user.IsInRole("Admin") || user.IsInRole("Cashier") || user.IsInRole("Kitchen"))
+            {
+                Navigation.NavigateTo(string.IsNullOrWhiteSpace(_returnUrl) ? DefaultLanding(authState) : _returnUrl);
+            }
+            else
+            {
+                // Đang có phiên KHÁCH trong trình duyệt: KHÔNG redirect —
+                // trước đây redirect mù theo returnUrl/DefaultLanding nên
+                // mở /login (hoặc bấm vào trang admin bị đá về /login) là
+                // bị đẩy đi ngay, không bao giờ thấy form đăng nhập nhân
+                // viên (user báo 2026-10-24). Ở lại form; đăng nhập nhân
+                // viên thành công sẽ thay token và vào thẳng returnUrl.
+                _currentUserName = user.Identity.Name;
+            }
         }
     }
 

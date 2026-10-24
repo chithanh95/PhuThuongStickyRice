@@ -141,6 +141,11 @@ do admin upload). DataProtection keys lưu trong database nên nhiều instance 
 
 ## Nhật ký thay đổi
 
+### 2026-10-24 (tối, tiếp 2) — Sửa kẹt đăng nhập admin khi trình duyệt đang có phiên khách
+
+- **Lỗi**: đang đăng nhập tài khoản **khách** ở shop mà mở trang đăng nhập nhân viên `/login` (hoặc bấm vào trang admin bị đá về `/login`) thì bị đẩy đi ngay — không bao giờ thấy form đăng nhập admin (trang `/login` cũ cứ có phiên đăng nhập bất kỳ là redirect theo returnUrl/trang chủ; kèm returnUrl admin thì thành vòng lặp admin ↔ login). Nay `/login` chỉ tự redirect khi phiên hiện tại là **nhân viên**; phiên khách thì ở lại form kèm dòng ghi chú "đang đăng nhập bằng tài khoản khách … — đăng nhập nhân viên sẽ thay thế phiên hiện tại", đăng nhập thành công là vào thẳng trang admin đích.
+- Trang đăng nhập khách `/dang-nhap` sửa bản gương: phiên **nhân viên** mở vào không còn bị redirect đi — ở lại form kèm ghi chú tương tự (nhân viên đăng nhập thử tài khoản khách không bị kẹt).
+
 ### 2026-10-24 (tối, tiếp) — Bỏ lưu ngày sinh ở tra cứu đơn + sửa bố cục card chia sẻ ảnh + họ tên checkout readonly
 
 - **Bỏ hẳn khối "Ngày sinh + mã OTP + Lưu ngày sinh" ở trang tra cứu đơn** (user chốt): khách có tài khoản sửa ngày sinh ở trang Tài khoản (vẫn giữ luật đổi 1 lần/năm). Dọn toàn bộ chuỗi theo sau: method FE, endpoint `PUT api/loyalty/by-phone/birthday`, `LoyaltyAppService.UpdateBirthdayAsync`, DTO `UpdateBirthdayInput` và mục đích OTP `birthday-change` (các mục đích OTP khác giữ nguyên).
