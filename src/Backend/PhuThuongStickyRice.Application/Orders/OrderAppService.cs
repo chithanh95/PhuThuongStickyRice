@@ -1286,8 +1286,10 @@ namespace PhuThuongStickyRice.Application.Orders
         /// <summary>
         /// Xếp hàng email xác nhận đơn (chỉ khi tạo đơn, không gửi lại khi
         /// xác nhận thanh toán). Chỉ gửi khi khách có nhập địa chỉ email.
-        /// Email được xếp qua pipeline EmailMessage có sẵn; với provider
-        /// Fake/test hiện tại thì chưa thực sự gửi đi.
+        /// Email được xếp qua pipeline EmailMessage có sẵn; BackgroundServer
+        /// gửi thật qua Gmail SMTP khi đã đặt App Password (biến môi trường
+        /// Notification__Email__SmtpClient__Password) — chưa đặt thì gửi
+        /// thất bại và mail nằm lại trong hàng đợi, không ảnh hưởng đơn.
         /// </summary>
         /// <param name="order">Đơn vừa được tạo.</param>
         private async Task QueueOrderConfirmationEmailAsync(Order order)

@@ -57,8 +57,10 @@ namespace PhuThuongStickyRice.Application.Reports
         // Báo cáo tuần lấy 7 ngày (thứ 2 tuần trước 00:00 → thứ 2 tuần này 00:00).
         private const int WeeklyReportDays = 7;
         // Số món bán chạy nhất đưa vào báo cáo dùng chung: ReportLabels.TopProductsCount.
-        // Địa chỉ gửi của báo cáo qua pipeline EmailMessage.
-        private const string ReportSenderAddress = "no-reply@phuthuong.vn";
+        // Địa chỉ gửi của báo cáo qua pipeline EmailMessage — Gmail của
+        // quán, phải trùng tài khoản SMTP đã cấu hình (như FromAddress của
+        // mail xác nhận đơn).
+        private const string ReportSenderAddress = "Maihuyen280579@gmail.com";
         // Độ dài đường kẻ "=" phân cách tiêu đề báo cáo text gửi chủ quán.
         private const int SeparatorLength = 50;
 

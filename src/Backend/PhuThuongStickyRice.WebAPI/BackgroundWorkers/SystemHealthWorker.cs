@@ -245,7 +245,7 @@ namespace PhuThuongStickyRice.WebAPI.BackgroundWorkers
                 var queue = provider.GetRequiredService<IEmailMessageRepository>();
                 await queue.AddAsync(new EmailMessage
                 {
-                    From = "noreply@xoiphuthuong.vn",
+                    From = "Maihuyen280579@gmail.com",
                     Tos = settings.OwnerReportEmail,
                     Subject = "[Xôi Huyền] Cảnh báo hệ thống",
                     Body = message.Replace("*", string.Empty)

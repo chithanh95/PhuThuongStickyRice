@@ -10,13 +10,20 @@ namespace PhuThuongStickyRice.Application.Orders.Email
 {
     /// <summary>
     /// Builds the order-confirmation email (Vietnamese). The email is queued
-    /// as an <see cref="EmailMessage"/> row via the existing pipeline; with
-    /// the current Fake/test provider nothing is actually delivered.
+    /// as an <see cref="EmailMessage"/> row via the existing pipeline and
+    /// delivered by the BackgroundServer worker through the configured
+    /// provider (Gmail SMTP — needs the App Password env var, see README).
     /// </summary>
     public static class OrderConfirmationEmailComposer
     {
-        /// <summary>Sender shown on order emails. Test sender — replace when real mail is configured.</summary>
-        public const string FromAddress = "no-reply@phuthuong.vn";
+        /// <summary>
+        /// Địa chỉ người gửi trên mail xác nhận đơn: Gmail chính thức của
+        /// quán. Phải trùng tài khoản SMTP đã cấu hình (Gmail chỉ cho gửi
+        /// từ chính tài khoản đã đăng nhập hoặc alias đã xác thực) — đổi
+        /// tài khoản gửi thì sửa cả ở đây lẫn Notification:Email:SmtpClient
+        /// trong appsettings của BackgroundServer.
+        /// </summary>
+        public const string FromAddress = "Maihuyen280579@gmail.com";
 
         /// <summary>
         /// Dựng email xác nhận đơn hàng (HTML tiếng Việt).
