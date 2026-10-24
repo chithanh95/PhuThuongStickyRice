@@ -141,6 +141,16 @@ do admin upload). DataProtection keys lưu trong database nên nhiều instance 
 
 ## Nhật ký thay đổi
 
+### 2026-10-24 (tối, tiếp 4) — Đơn giản hóa trang thanh toán cho người già (Phương án B của đội UI/UX)
+
+User chốt **Phương án B** từ đề xuất của đội design UI/UX: **giữ nguyên cấu trúc 2 cột**, chỉ sửa câu chữ + gộp dòng + sửa lỗi:
+
+- **Câu chữ dễ hiểu**: cách nhận mặc định (tự đến quán lấy) đưa lên trước; bỏ chữ "book shipper"/"VietQR" khỏi nhãn; mọi thông điệp về cách nhận hàng/phí/thời gian chuẩn bị **gộp từ 3 chỗ còn 1 đoạn** ngay dưới lựa chọn; bỏ nhãn "Thời gian nhận hàng *" gây hiểu lầm là phải chọn; "Đặt hộ" → "Đặt cho người khác"; "Cần hóa đơn VAT" → "Cần hóa đơn đỏ cho công ty"; mỗi cách trả tiền thêm 1 câu trấn an (trả tiền khi đã nhận xôi; quét mã QR khỏi gõ số tài khoản); khối xác thực ví/điểm bỏ hẳn chữ "OTP" ("6 con số trong tin nhắn"). Xưng hô giữ "bạn" như hiện nay.
+- **Gộp dòng tiền**: mọi khoản giảm (giờ vàng + mã giảm giá + ưu đãi hạng + đổi điểm) hiện **1 dòng "Được giảm"** kèm chi tiết nhỏ bên dưới (trước đây tối đa 5 dòng rời); nhãn tổng đổi thành **"Tổng phải trả"**.
+- **Mobile hết vỡ bảng**: danh sách món trong card tóm tắt chuyển từ bảng 4 cột sang **thẻ dọc từng món** (tên + nút Xóa / tăng giảm + thành tiền); bảng chỉ còn phần tổng tiền. Desktop giữ bảng như cũ.
+- **Lỗi nhập liệu thân thiện**: câu lỗi nói rõ cách sửa; bấm "Đặt hàng" mà còn lỗi thì **tự cuộn tới ô sai đầu tiên và đặt con trỏ vào đó**; thanh dính đáy hiện thêm **dòng lý do** khi chưa đặt được (còn lỗi / quán tạm ngưng / chưa đủ đơn tối thiểu); **số điện thoại gõ có dấu cách, gạch ngang hoặc đầu +84 vẫn nhận** và được gọt sạch trước khi gửi đơn.
+- **Thu gọn**: mã giảm giá và mã giới thiệu thành **dòng bấm-mở** (không có mã thì không phải nhìn ô nhập); **cảnh báo đặt cọc** chuyển từ cột tóm tắt xuống ngay **dưới nhóm chọn cách trả tiền**.
+
 ### 2026-10-24 (tối, tiếp 3) — Sửa vỡ bố cục card "Đơn hàng của bạn" ở checkout trên mobile
 
 - **Lỗi thật trong code**: các dòng tổng của bảng tóm tắt (tạm tính, giảm giá, phí giao hàng, tổng cộng) để nhãn `colspan=3` + số tiền ở ô thứ 4; trên mobile bảng khóa `table-layout: fixed` với cột 4 chỉ 44–48px (cột nút ×) nên **số tiền bị ép vào ô ~48px**, vỡ/clip. Đã đổi markup: nhãn `colspan=2`, số tiền `colspan=2` (dùng bề rộng cột 3+4 ≈ 136px); chỉnh lại bề rộng cột (SL 128px, thành tiền 92px, × 44px), giảm padding ngang của ô và padding card để cột tên món rộng hơn; chữ trong các hộp thông tin của card (điểm thành viên, mã giới thiệu…) lên **14px** dễ đọc (trước ~11px).

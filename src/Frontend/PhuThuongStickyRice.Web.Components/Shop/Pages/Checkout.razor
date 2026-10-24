@@ -346,36 +346,34 @@ else
             <div class="card">
                 <div class="card-header">@AppLocalizationService.Translate("shop.your_info")</div>
                 <div class="card-body">
+                    @* Phương án B (đội UI/UX 2026-10-24): cách nhận mặc định để
+                       TRƯỚC; bỏ chữ "book shipper"; MỌI thông điệp về cách
+                       nhận hàng/phí/thời gian chuẩn bị gộp thành 1 đoạn duy
+                       nhất ngay dưới 2 lựa chọn (trước đây lặp ở 3 chỗ: chú
+                       thích dưới radio + alert phí + alert theo hình thức);
+                       bỏ nhãn "Thời gian nhận hàng *" (không có gì để chọn,
+                       gây cảm giác thiếu thao tác). *@
                     <div class="form-group">
-                        <label id="co-fulfillment-label">Hình thức nhận hàng *</label>
+                        <label id="co-fulfillment-label">Bạn nhận xôi thế nào?</label>
                         <div role="radiogroup" aria-labelledby="co-fulfillment-label">
-                        <div class="form-check">
-                            <input class="form-check-input" type="radio" name="fulfillment" id="fm-shipper"
-                                   checked="@(_fulfillment == "ShipperPickup")" @onchange="@(() => _fulfillment = "ShipperPickup")" />
-                            <label class="form-check-label" for="fm-shipper">🛵 Tôi tự book shipper đến lấy <small class="text-success">(miễn phí ship)</small></label>
-                        </div>
                         <div class="form-check">
                             <input class="form-check-input" type="radio" name="fulfillment" id="fm-pickup"
                                    checked="@(_fulfillment == "Pickup")" @onchange="@(() => _fulfillment = "Pickup")" />
-                            <label class="form-check-label" for="fm-pickup">🏪 Tôi tự đến quán lấy <small class="text-success">(miễn phí ship)</small></label>
+                            <label class="form-check-label" for="fm-pickup">🏪 Bạn tự đến quán lấy</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="fulfillment" id="fm-shipper"
+                                   checked="@(_fulfillment == "ShipperPickup")" @onchange="@(() => _fulfillment = "ShipperPickup")" />
+                            <label class="form-check-label" for="fm-shipper">🛵 Bạn nhờ người lấy hộ / gọi xe đến lấy</label>
                         </div>
                         </div>
-                        <small class="text-muted d-block mt-1">Quán chuẩn bị sẵn món theo mã đơn: bạn tự đến quán lấy, hoặc tự đặt xe (Grab/Ahamove...) và báo tài xế đọc mã đơn để lấy — phí ship bạn trả trực tiếp cho tài xế.</small>
-                    </div>
-                    @* TT3: shipping fee + estimated time, visible as soon as the
-                       fulfillment method is known (before the submit button). *@
-                    <div class="alert alert-success py-2 mb-3 tt-shipinfo">
-                        <small>
-                            🚚 Phí giao hàng: <strong>Miễn phí</strong>
+                        <small class="text-muted d-block mt-1">
+                            Quán chuẩn bị sẵn món theo mã đơn: bạn đến quán đọc mã đơn là lấy được, hoặc tự gọi xe (Grab/Ahamove...) đến lấy — tiền xe bạn trả thẳng cho tài xế. Quán không thu thêm phí nào.
                             @if (_shopSettings.EstimatedDeliveryMinutes > 0)
                             {
-                                <span> · ⏱ Quán chuẩn bị trong ~@_shopSettings.EstimatedDeliveryMinutes phút</span>
+                                <span>⏱ Quán chuẩn bị trong khoảng ~@_shopSettings.EstimatedDeliveryMinutes phút sau khi bạn đặt.</span>
                             }
                         </small>
-                    </div>
-                    <div class="form-group">
-                        <label>Thời gian nhận hàng *</label>
-                        <p class="mb-0">⚡ Nhận ngay <small class="text-muted">(quán chuẩn bị sớm nhất có thể)</small></p>
                     </div>
                     @* Item 109: branch picker. *@
                     @if (_branches != null && _branches.Count > 0)
@@ -407,7 +405,7 @@ else
                         </div>
                     }
                     <div class="form-group">
-                        <label for="co-name">@AppLocalizationService.Translate("common.name") *</label>
+                        <label for="co-name">@AppLocalizationService.Translate("common.name")</label>
                         @* A11y-1610: lỗi validation gắn với input qua aria-describedby +
                            aria-invalid để trình đọc màn hình đọc được lỗi khi focus.
                            Áp dụng cùng pattern cho mọi field có lỗi bên dưới. *@
@@ -429,7 +427,7 @@ else
                             <small class="text-danger" id="co-name-error" role="alert">@_nameError</small>
                         }                    </div>
                     <div class="form-group">
-                        <label for="co-phone">@AppLocalizationService.Translate("common.phone") *</label>
+                        <label for="co-phone">@AppLocalizationService.Translate("common.phone")</label>
                         <div class="co-phone-field">
                             <input id="co-phone" class="form-control @FieldClass(_phoneError)" value="@_order.CustomerPhone"
                                    @oninput="OnPhoneInputAsync" @onblur="LookupLastOrderAsync"
@@ -461,7 +459,7 @@ else
                             <input class="form-check-input co-remember-checkbox" type="checkbox" id="co-remember"
                                    @bind="_rememberMe" />
                             <label class="form-check-label ml-2 mb-0 co-remember-label" for="co-remember">
-                                Nhớ tên &amp; SĐT của tôi cho lần sau <small class="text-muted">(lưu trên máy này)</small>
+                                Nhớ sẵn tên và số cho lần sau <small class="text-muted">(lần sau bạn khỏi nhập lại)</small>
                             </label>
                         </div>
                         @if (_rememberedGuestLoaded)
@@ -481,22 +479,12 @@ else
                             <small class="text-danger" id="co-email-error" role="alert">@_emailError</small>
                         }
                     </div>
-                    @if (_fulfillment == "ShipperPickup")
-                    {
-                        <div class="alert alert-info">
-                            <small>🛵 Bạn tự book shipper (Grab/Ahamove...). Quán chuẩn bị sẵn món — shipper đến đọc <strong>mã đơn</strong> để lấy, <strong>miễn phí ship</strong>.</small>
-                        </div>
-                    }
-                    else
-                    {
-                        <div class="alert alert-info">
-                            <small>🏪 Bạn sẽ tự đến lấy tại quán — không cần nhập địa chỉ, <strong>miễn phí ship</strong>.</small>
-                        </div>
-                    }
+                    @* Alert theo hình thức nhận đã bỏ (Phương án B): nội dung
+                       đã gộp vào 1 đoạn duy nhất dưới 2 radio ở đầu form. *@
                     <div class="form-group">
                         <label for="co-note">@AppLocalizationService.Translate("shop.note")</label>
                         <textarea id="co-note" class="form-control" @bind="_order.Notes" rows="2"
-                                  placeholder="Ví dụ: giao giờ hành chính..."></textarea>
+                                  placeholder="Ví dụ: làm ít cay, cho thêm ruốc…"></textarea>
                     </div>
                     <div class="form-check co-remember-check mb-2">
                         <input class="form-check-input" type="checkbox" id="recipient-toggle"
@@ -532,7 +520,7 @@ else
                         <div class="card-header p-2">
                             <button type="button" class="btn btn-link btn-sm p-0" @onclick="() => _showVat = !_showVat"
                                     aria-expanded="@_showVat">
-                                @(_showVat ? "▾" : "▸") Cần hóa đơn VAT
+                                @(_showVat ? "▾" : "▸") 🧾 Cần hóa đơn đỏ cho công ty
                             </button>
                         </div>
                         @if (_showVat)
@@ -571,17 +559,17 @@ else
                            trước đây <label> mồ côi không gắn input nào, trình đọc
                            màn hình không đọc được tên nhóm (đồng bộ pattern
                            fulfillment ở trên). *@
-                        <label id="co-payment-label">@AppLocalizationService.Translate("shop.payment_method") *</label>
+                        <label id="co-payment-label">@AppLocalizationService.Translate("shop.payment_method")</label>
                         <div role="radiogroup" aria-labelledby="co-payment-label">
                         <div class="form-check">
                             <input class="form-check-input" type="radio" name="paymentMethod" id="pm-cod"
                                    checked="@(_order.PaymentMethod == "Cod")" @onchange="@(() => _order.PaymentMethod = "Cod")" />
-                            <label class="form-check-label" for="pm-cod">@AppLocalizationService.Translate("shop.pay_cod")</label>
+                            <label class="form-check-label" for="pm-cod">@AppLocalizationService.Translate("shop.pay_cod")<small class="text-muted d-block">Bạn chỉ trả tiền khi đã nhận được xôi trên tay.</small></label>
                         </div>
                         <div class="form-check">
                             <input class="form-check-input" type="radio" name="paymentMethod" id="pm-bank"
                                    checked="@(_order.PaymentMethod == "BankTransfer")" @onchange="@(() => _order.PaymentMethod = "BankTransfer")" />
-                            <label class="form-check-label" for="pm-bank">@AppLocalizationService.Translate("shop.pay_bank")</label>
+                            <label class="form-check-label" for="pm-bank">@AppLocalizationService.Translate("shop.pay_bank")<small class="text-muted d-block">Đặt xong, trang sẽ hiện 1 mã vuông (mã QR). Bạn mở ứng dụng ngân hàng, quét mã là chuyển đúng số tiền, khỏi gõ số tài khoản.</small></label>
                         </div>
                         @* User 2026-10-21: ẩn lựa chọn MoMo — quán chưa có tài khoản
                            doanh nghiệp MoMo. Bật lại bằng cờ "momo-payments" ở
@@ -607,6 +595,17 @@ else
                         }
                         </div>
                     </div>
+                    @* Phương án B: cảnh báo đặt cọc chuyển từ cột tóm tắt sang
+                       ngay dưới nhóm chọn cách trả tiền — khách thấy đúng
+                       lúc quyết định, không bỏ sót như khi nằm ở cột bên. *@
+                    @if (_depositPreview > 0)
+                    {
+                        <div class="alert alert-warning py-2">
+                            <small>
+                                💰 Đơn này hơi lớn nên quán cần bạn gửi cọc trước <strong>@FormatPrice(_depositPreview)</strong> (đơn từ @FormatPrice(_shopSettings.DepositThreshold), cọc @_shopSettings.DepositPercent%). Đặt xong quán sẽ gọi điện dặn kỹ rồi bạn mới chuyển — đừng chuyển trước khi quán gọi.
+                            </small>
+                        </div>
+                    }
                 </div>
             </div>
         </div>
@@ -614,14 +613,63 @@ else
             <div class="card co-summary">
                 <div class="card-header">@AppLocalizationService.Translate("shop.order_summary")</div>
                 <div class="card-body">
+                    @* Phương án B: trên mobile KHÔNG dùng bảng cho danh sách
+                       món (bảng chỉ còn phần tổng tiền) — mỗi món 1 thẻ dọc:
+                       tên + nút Xóa ở dòng trên, cụm tăng/giảm + thành tiền
+                       ở dòng dưới, hết cảnh bị ép cột/vỡ bảng như trước.
+                       Desktop vẫn dùng bảng ngay bên dưới. *@
+                    <div class="co-items-mobile">
+                        @foreach (var cartItem in CartState.Items)
+                        {
+                            <div class="co-item-card" @key="cartItem.LineKey">
+                                <div class="co-item-line">
+                                    <span class="co-item-name">
+                                        @cartItem.ProductName
+                                        @if (cartItem.IsCombo)
+                                        {
+                                            <span class="badge badge-warning ml-1">Món ghép</span>
+                                        }
+                                    </span>
+                                    <button type="button" class="btn btn-sm btn-outline-danger co-item-remove"
+                                            @onclick="() => CartState.Remove(cartItem.LineKey)" title="Xóa món khỏi đơn"
+                                            aria-label="Xóa @cartItem.ProductName khỏi đơn">Xóa</button>
+                                </div>
+                                @if (!string.IsNullOrWhiteSpace(cartItem.SizeName))
+                                {
+                                    <small class="text-muted d-block">Cỡ: @cartItem.SizeName</small>
+                                }
+                                @if (!string.IsNullOrWhiteSpace(cartItem.ToppingNames))
+                                {
+                                    <small class="text-muted d-block">Ăn kèm: @cartItem.ToppingNames</small>
+                                }
+                                @if (!string.IsNullOrWhiteSpace(cartItem.Note))
+                                {
+                                    <small class="text-info d-block">📝 @cartItem.Note</small>
+                                }
+                                <div class="co-item-line co-item-bottom">
+                                    <span class="co-item-qty">
+                                        <button type="button" class="btn btn-sm btn-outline-secondary"
+                                                @onclick="() => ChangeQty(cartItem, -1)" title="Bớt 1"
+                                                aria-label="Bớt 1 @cartItem.ProductName">−</button>
+                                        <span class="mx-2">@cartItem.Quantity</span>
+                                        <button type="button" class="btn btn-sm btn-outline-secondary"
+                                                @onclick="() => ChangeQty(cartItem, 1)" title="Thêm 1"
+                                                aria-label="Thêm 1 @cartItem.ProductName">+</button>
+                                    </span>
+                                    <strong class="co-item-total">@FormatPrice(cartItem.LineTotal)</strong>
+                                </div>
+                            </div>
+                        }
+                    </div>
                     <table class="table table-sm">
+                        <colgroup><col /><col /><col /><col /></colgroup>
                         <thead>
-                            <tr><th scope="col">Món</th><th scope="col" class="text-center">SL</th><th scope="col" class="text-right">Thành tiền</th><th scope="col"></th></tr>
+                            <tr class="co-items-head"><th scope="col">Món</th><th scope="col" class="text-center">SL</th><th scope="col" class="text-right">Thành tiền</th><th scope="col"></th></tr>
                         </thead>
                         <tbody>
                             @foreach (var cartItem in CartState.Items)
                             {
-                                <tr @key="cartItem.LineKey">
+                                <tr class="co-item-row" @key="cartItem.LineKey">
                                     <td>
                                         @cartItem.ProductName
                                         @if (cartItem.IsCombo)
@@ -662,20 +710,6 @@ else
                                 <td class="text-muted" colspan="2">@AppLocalizationService.Translate("shop.subtotal")</td>
                                 <td class="text-right text-muted" colspan="2">@FormatPrice(_subtotal)</td>
                             </tr>
-                            @if (_activePromotion != null)
-                            {
-                                <tr>
-                                    <td class="text-success" colspan="2">🏷 Khuyến mãi giờ vàng (@_activePromotion.Name) −@_activePromotion.DiscountPercent%</td>
-                                    <td class="text-right text-success" colspan="2">−@FormatPrice(_promotionDiscountPreview)</td>
-                                </tr>
-                            }
-                            @if (_discountAmount > 0)
-                            {
-                                <tr>
-                                    <td class="text-success" colspan="2">Giảm giá (@_appliedCode)</td>
-                                    <td class="text-right text-success" colspan="2">−@FormatPrice(_discountAmount)</td>
-                                </tr>
-                            }
                             @if (_isFreeship)
                             {
                                 @* Bug-hunt 2026-10-19: quán không giao hàng nên phí ship luôn 0
@@ -686,32 +720,44 @@ else
                                     <td class="text-right text-success" colspan="2">Miễn phí</td>
                                 </tr>
                             }
-                            @if (_tierDiscountPreview > 0)
-                            {
-                                <tr>
-                                    <td class="text-success" colspan="2">Ưu đãi hạng @_loyalty.Tier (@_loyalty.TierDiscountPercent%)</td>
-                                    <td class="text-right text-success" colspan="2">−@FormatPrice(_tierDiscountPreview)</td>
-                                </tr>
-                            }
-                            @if (_redeemDiscountPreview > 0)
-                            {
-                                <tr>
-                                    <td class="text-success" colspan="2">Đổi @_redeemPoints điểm</td>
-                                    <td class="text-right text-success" colspan="2">−@FormatPrice(_redeemDiscountPreview)</td>
-                                </tr>
-                            }
-                            @* Item 125: tổng tiết kiệm — cộng mọi khoản giảm để khách "thấy" được lợi.
-                               Bug-hunt 2026-10-19: KHÔNG cộng freeship — phí ship thực tế luôn 0
-                               (quán không giao hàng) nên cộng DeliveryFee là số tiết kiệm ảo. *@
+                            @* Phương án B (gộp dòng): mọi khoản giảm hiện 1
+                               dòng duy nhất "Được giảm" — chi tiết từng khoản
+                               ghi nhỏ ngay dưới nhãn để ai muốn xem vẫn rõ.
+                               Vẫn KHÔNG cộng freeship vào số tiền giảm (phí
+                               ship thực tế luôn 0 — cộng là số ảo, bài học
+                               bug-hunt 2026-10-19). *@
                             @{
                                 var totalSaved = _promotionDiscountPreview + _discountAmount
                                     + _tierDiscountPreview + _redeemDiscountPreview;
+                                var savedParts = new System.Collections.Generic.List<string>();
+                                if (_activePromotion != null)
+                                {
+                                    savedParts.Add($"Giờ vàng {_activePromotion.DiscountPercent}%");
+                                }
+                                if (_discountAmount > 0)
+                                {
+                                    savedParts.Add($"Mã {_appliedCode}");
+                                }
+                                if (_tierDiscountPreview > 0)
+                                {
+                                    savedParts.Add(_loyalty != null ? $"Hạng {_loyalty.Tier}" : "Ưu đãi hạng");
+                                }
+                                if (_redeemDiscountPreview > 0)
+                                {
+                                    savedParts.Add($"Đổi {_redeemPoints} điểm");
+                                }
                             }
                             @if (totalSaved > 0)
                             {
                                 <tr class="table-success">
-                                    <td class="text-success font-weight-bold" colspan="2">💰 Bạn tiết kiệm được</td>
-                                    <td class="text-right text-success font-weight-bold" colspan="2">@FormatPrice(totalSaved)</td>
+                                    <td class="text-success" colspan="2">
+                                        <strong>💰 Được giảm</strong>
+                                        @if (savedParts.Count > 0)
+                                        {
+                                            <small class="d-block">@string.Join(" · ", savedParts)</small>
+                                        }
+                                    </td>
+                                    <td class="text-right text-success" colspan="2"><strong>−@FormatPrice(totalSaved)</strong></td>
                                 </tr>
                             }
                             <tr>
@@ -730,12 +776,23 @@ else
                         </tbody>
                         <tfoot>
                             <tr>
-                                <td colspan="2"><strong>@AppLocalizationService.Translate("common.total")</strong></td>
+                                <td colspan="2"><strong>@AppLocalizationService.Translate("shop.payable_total")</strong></td>
                                 <td class="text-right" colspan="2"><strong class="text-danger">@FormatPrice(_grandTotal)</strong></td>
                             </tr>
                         </tfoot>
                     </table>
 
+                    @* Phương án B: mã giảm giá thu thành 1 dòng bấm-mở —
+                       khách không có mã khỏi phải nhìn ô nhập. Đã có mã,
+                       thông báo hoặc kết quả thì tự mở sẵn để thấy. *@
+                    @if (!_showDiscountInput && _discountAmount <= 0 && !_isFreeship && string.IsNullOrEmpty(_discountMessage) && string.IsNullOrEmpty(_autoAppliedNote) && string.IsNullOrEmpty(_discountCodeInput))
+                    {
+                        <button type="button" class="btn btn-outline-secondary btn-block co-collapse-toggle" @onclick="() => _showDiscountInput = true">
+                            🏷 Bạn có mã giảm giá không? Bấm vào đây nếu có
+                        </button>
+                    }
+                    else
+                    {
                     <div class="form-group">
                         <label for="co-discount">@AppLocalizationService.Translate("shop.discount_code")</label>
                         <div class="input-group">
@@ -749,7 +806,7 @@ else
                         </div>
                         @if (!string.IsNullOrEmpty(_discountMessage))
                         {
-                            <small class="@(_discountAmount > 0 || _isFreeship ? "text-success" : "text-danger")">@_discountMessage</small>
+                            <small class="@(_discountAmount > 0 || _isFreeship ? "text-success" : "text-danger")">@(_discountAmount > 0 || _isFreeship ? "✔ " : "✘ ")@_discountMessage</small>
                         }
                         @* Item 139 (UX người già): ghi chú to, rõ, câu đơn giản — không dùng chữ nhỏ/mờ cho thông tin quan trọng. *@
                         @if (!string.IsNullOrEmpty(_autoAppliedNote))
@@ -757,6 +814,7 @@ else
                             <div class="mt-2 font-weight-bold text-success co-auto-applied-note">✨ @_autoAppliedNote</div>
                         }
                     </div>
+                    }
 
                     @if (_loyalty != null)
                     {
@@ -805,26 +863,29 @@ else
                     @* Item 105: referrals are feature-flagged. *@
                     @if (_referralsEnabled)
                     {
+                        @* Phương án B: mã giới thiệu cũng thu thành 1 dòng
+                           bấm-mở; đã nhập mã hoặc có thông báo thì mở sẵn. *@
+                        @if (!_showReferralInput && string.IsNullOrEmpty(_order.ReferralCode) && string.IsNullOrEmpty(_referralMessage))
+                        {
+                            <button type="button" class="btn btn-outline-secondary btn-block co-collapse-toggle" @onclick="() => _showReferralInput = true">
+                                🔖 Có người giới thiệu bạn đến quán? Bấm vào đây nếu có
+                            </button>
+                        }
+                        else
+                        {
                         <div class="form-group">
                             <label for="co-referral">Mã giới thiệu <small class="text-muted">(nếu có)</small></label>
                             <input id="co-referral" class="form-control" @bind="_order.ReferralCode" @bind:after="CheckReferralCodeAsync" placeholder="VD: PT-AB12CD" />
                             @if (!string.IsNullOrEmpty(_referralMessage))
                             {
-                                <small class="@(_referralValid ? "text-success" : "text-danger")">@(_referralValid ? "✓ " : "")@_referralMessage</small>
+                                <small class="@(_referralValid ? "text-success" : "text-danger")">@(_referralValid ? "✓ " : "✘ ")@_referralMessage</small>
                             }
                         </div>
+                        }
                     }
 
-                    @if (_depositPreview > 0)
-                    {
-                        <div class="alert alert-warning py-2">
-                            <small>
-                                💰 Đơn chuyển khoản từ @FormatPrice(_shopSettings.DepositThreshold) cần đặt cọc trước:
-                                <strong>@FormatPrice(_depositPreview)</strong> (@_shopSettings.DepositPercent%).
-                                Shop sẽ liên hệ xác nhận cọc.
-                            </small>
-                        </div>
-                    }
+                    @* Cảnh báo đặt cọc đã chuyển xuống dưới nhóm cách trả
+                       tiền ở cột form (Phương án B) — không còn ở đây. *@
 
                     @* S25: khách chưa đăng nhập mà dùng ví/điểm của SĐT thì phải xác thực OTP của chính SĐT đó (server cũng chặn ở POST api/orders). *@
                     @if (NeedsSpendOtp)
@@ -832,14 +893,14 @@ else
                         <div class="alert alert-warning py-2">
                             <small>
                                 🔐 Bạn đang dùng <strong>ví/điểm</strong> của số <strong>@_order.CustomerPhone</strong> nhưng chưa đăng nhập.
-                                Để chắc chắn là chính bạn, shop cần mã OTP gửi về số này:
+                                Để chắc chắn đúng là bạn, quán sẽ gửi tin nhắn có 6 con số tới số này — bạn nhập 6 số đó vào đây:
                             </small>
                             <div class="input-group input-group-sm mt-2">
                                 <input class="form-control text-center" @bind="_spendOtp" inputmode="numeric" maxlength="6"
-                                       placeholder="Nhập mã OTP 6 số" aria-label="Mã OTP xác thực dùng ví/điểm" />
+                                       placeholder="Nhập 6 con số trong tin nhắn" aria-label="6 con số xác nhận dùng ví/điểm" />
                                 <div class="input-group-append">
                                     <button class="btn btn-outline-primary" @onclick="SendSpendOtpAsync" disabled="@_sendingSpendOtp">
-                                        @(_sendingSpendOtp ? "Đang gửi..." : "Gửi mã OTP")
+                                        @(_sendingSpendOtp ? "Đang gửi..." : "Gửi tin nhắn")
                                     </button>
                                 </div>
                             </div>
@@ -872,8 +933,15 @@ else
 
     @* Mobile: fixed bottom order bar (CSS shows it only on small screens). *@
     <div class="co-mobile-bar">
+        @* Phương án B: khi chưa đặt được (còn lỗi nhập liệu / quán tạm
+           ngưng / chưa đủ đơn tối thiểu), thanh dính hiện luôn lý do ngắn
+           ở 1 dòng riêng phía trên — hết cảnh "nút chết im lặng". *@
+        @if (!string.IsNullOrEmpty(_barReason))
+        {
+            <div class="co-bar-reason" role="alert">@_barReason</div>
+        }
         <div class="co-total">
-            <small>@AppLocalizationService.Translate("common.total")</small>
+            <small>@AppLocalizationService.Translate("shop.payable_total")</small>
             <strong class="text-danger">@FormatPrice(_grandTotal)</strong>
         </div>
         <button class="btn btn-success" @onclick="PlaceOrder" disabled="@(_submitting || _minOrderBlocked || _orderingBlocked)">
@@ -881,7 +949,7 @@ else
         </button>
     </div>
     @* In-flow spacer so the fixed bar never covers the page bottom *@
-    <div class="co-mobile-spacer" aria-hidden="true"></div>
+    <div class="co-mobile-spacer" aria-hidden="true" style="@(!string.IsNullOrEmpty(_barReason) ? "height:126px" : null)"></div>
 }
 
 @code {
@@ -983,6 +1051,10 @@ else
     // Recipient / VAT / gift.
     private bool _orderForSomeoneElse;
     private bool _showVat;
+    // Phương án B: 2 cụm mã (giảm giá / giới thiệu) mặc định thu gọn
+    // thành 1 dòng bấm-mở; bấm vào mới hiện ô nhập.
+    private bool _showDiscountInput;
+    private bool _showReferralInput;
 
     // Item 105: feature flags (UI gating; backend enforces too).
     // 2026-10-19: _giftWrapEnabled bỏ — user xóa checkbox gói quà khỏi checkout.
@@ -1725,6 +1797,17 @@ else
     /// thì ô tự mở lại cho nhập tên người nhận. Tên đang trống (tài khoản
     /// chưa có tên ở nguồn nào) cũng để nhập tay để không chặn đặt hàng.
     /// </summary>
+    /// <summary>
+    /// Phương án B: lý do ngắn hiện trên thanh dính đáy (mobile) khi
+    /// chưa đặt được — lỗi nhập liệu, quán tạm ngưng hoặc chưa đủ đơn
+    /// tối thiểu. Null = không hiện dòng lý do.
+    /// </summary>
+    private string _barReason =>
+        !string.IsNullOrEmpty(_checkoutError) ? _checkoutError
+        : _orderingBlocked && !string.IsNullOrEmpty(_closedNotice) ? _closedNotice
+        : _minOrderBlocked ? $"Đơn tối thiểu {FormatPrice(_shopSettings.MinOrderAmount)} — bạn thêm món giúp quán nhé"
+        : null;
+
     private bool IsNameReadonly =>
         _isLoggedIn
         && !string.IsNullOrWhiteSpace(_order.CustomerName)
@@ -2061,25 +2144,52 @@ else
     /// buộc vì shop không giao hàng.
     /// </summary>
     /// <returns>true khi mọi field hợp lệ.</returns>
+    /// <summary>
+    /// Gọt SĐT về dạng chỉ còn số để kiểm tra/gửi đơn: bỏ khoảng trắng,
+    /// dấu chấm, gạch ngang, ngoặc; đầu +84/84 (khi đủ 11 số) quy về 0.
+    /// Người già hay gõ "0389 245 468" — vẫn phải nhận (đội UI/UX §6).
+    /// </summary>
+    private static string NormalizePhone(string phone)
+    {
+        if (string.IsNullOrWhiteSpace(phone))
+        {
+            return string.Empty;
+        }
+
+        var digits = new string(phone.Where(char.IsDigit).ToArray());
+        if (phone.TrimStart().StartsWith("+84"))
+        {
+            digits = "0" + digits.Substring(2);
+        }
+        else if (digits.Length == 11 && digits.StartsWith("84"))
+        {
+            digits = "0" + digits.Substring(2);
+        }
+
+        return digits;
+    }
+
     private bool ValidateFields()
     {
-        _nameError = string.IsNullOrWhiteSpace(_order.CustomerName) ? "Vui lòng nhập họ tên." : null;
-        _phoneError = !PhoneValidation.IsValidVnPhone(_order.CustomerPhone) ? "Số điện thoại không đúng định dạng (VD: 0901234567)." : null;
+        // Câu lỗi viết kiểu "nói cách sửa" cho người già (đội UI/UX §6):
+        // không nói lỗi kỹ thuật, chỉ nói cần làm gì tiếp theo.
+        _nameError = string.IsNullOrWhiteSpace(_order.CustomerName) ? "Bạn chưa ghi tên. Bạn gõ tên của bạn vào ô này nhé." : null;
+        _phoneError = !PhoneValidation.IsValidVnPhone(NormalizePhone(_order.CustomerPhone)) ? "Số này chưa đúng. Số điện thoại cần đủ 10 số và bắt đầu bằng 0 — bạn kiểm tra lại giúp quán." : null;
         _emailError = !string.IsNullOrWhiteSpace(_order.CustomerEmail) && !IsValidEmail(_order.CustomerEmail)
-            ? "Email không đúng định dạng. Bạn có thể để trống nếu không có email."
+            ? "Email này có vẻ chưa đúng. Bạn kiểm tra lại, hoặc xóa trống cũng không sao."
             : null;
         _addressError = null;
         _recipientNameError = _orderForSomeoneElse && string.IsNullOrWhiteSpace(_order.RecipientName)
-            ? "Vui lòng nhập tên người nhận."
+            ? "Bạn chưa ghi tên người nhận."
             : null;
-        _recipientPhoneError = _orderForSomeoneElse && !PhoneValidation.IsValidVnPhone(_order.RecipientPhone)
-            ? "SĐT người nhận không đúng định dạng."
+        _recipientPhoneError = _orderForSomeoneElse && !PhoneValidation.IsValidVnPhone(NormalizePhone(_order.RecipientPhone))
+            ? "Số của người nhận chưa đúng. Số điện thoại cần đủ 10 số và bắt đầu bằng 0."
             : null;
         _taxCodeError = _showVat && string.IsNullOrWhiteSpace(_order.TaxCode)
-            ? "Vui lòng nhập mã số thuế."
+            ? "Bạn chưa nhập mã số thuế."
             : null;
         _companyNameError = _showVat && string.IsNullOrWhiteSpace(_order.CompanyName)
-            ? "Vui lòng nhập tên công ty."
+            ? "Bạn chưa nhập tên công ty."
             : null;
 
         return _nameError == null && _phoneError == null && _emailError == null && _addressError == null
@@ -2112,7 +2222,7 @@ else
         var phone = _order.CustomerPhone?.Trim();
         if (string.IsNullOrWhiteSpace(phone))
         {
-            _spendOtpMessage = "Vui lòng nhập số điện thoại ở thông tin khách hàng trước khi gửi mã OTP.";
+            _spendOtpMessage = "Bạn nhập số điện thoại ở phần thông tin trước, rồi quay lại đây gửi tin nhắn nhé.";
             _spendOtpIsError = true;
             return;
         }
@@ -2121,13 +2231,13 @@ else
         try
         {
             await ShopEngagementService.SendPhoneOtpAsync(phone, "checkout-spend");
-            _spendOtpMessage = "Đã gửi mã OTP qua SMS về số của bạn. Mã có hiệu lực 5 phút.";
+            _spendOtpMessage = "Đã gửi tin nhắn có 6 con số về số của bạn. Bạn nhập trong vòng 5 phút nhé.";
             _spendOtpIsError = false;
         }
         catch (Exception ex)
         {
             _spendOtpMessage = string.IsNullOrWhiteSpace(ex.Message)
-                ? "Không gửi được mã OTP. Vui lòng thử lại."
+                ? "Không gửi được tin nhắn. Bạn thử lại giúp quán."
                 : ex.Message;
             _spendOtpIsError = true;
         }
@@ -2164,8 +2274,40 @@ else
 
         if (!ValidateFields())
         {
-            _checkoutError = "Vui lòng kiểm tra lại các thông tin được đánh dấu.";
+            _checkoutError = "Còn vài chỗ chưa đúng — bạn kiểm tra lại giúp quán nhé.";
+            // Phương án B: tự cuộn tới ô sai đầu tiên + đặt con trỏ vào
+            // đó (trước đây lỗi chỉ hiện ở đầu trang, khách ở cuối trang
+            // bấm mà không thấy phản ứng gì).
+            var firstErrorId = _nameError != null ? "co-name"
+                : _phoneError != null ? "co-phone"
+                : _emailError != null ? "co-email"
+                : _recipientNameError != null ? "co-recipient-name"
+                : _recipientPhoneError != null ? "co-recipient-phone"
+                : _taxCodeError != null ? "co-tax-code"
+                : _companyNameError != null ? "co-company-name"
+                : null;
+            if (firstErrorId != null)
+            {
+                try
+                {
+                    await JSRuntime.InvokeVoidAsync("ptScrollToId", firstErrorId);
+                }
+                catch (Exception)
+                {
+                    // JS chưa sẵn sàng thì bỏ qua — lỗi vẫn hiện dưới ô.
+                }
+            }
+
             return;
+        }
+
+        // Gọt SĐT về dạng sạch trước khi dựng đơn (khách gõ có dấu cách
+        // vẫn qua được kiểm tra ở trên; gửi số sạch để các tra cứu
+        // điểm/ví/đơn cũ khớp đúng 1 dạng).
+        _order.CustomerPhone = NormalizePhone(_order.CustomerPhone);
+        if (_orderForSomeoneElse)
+        {
+            _order.RecipientPhone = NormalizePhone(_order.RecipientPhone);
         }
 
         if (_minOrderBlocked)

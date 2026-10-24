@@ -70,6 +70,14 @@
                 return v === 'dark' || (v === 'auto' && window.ptResolveAutoTheme() === 'dark');
             } catch (e) { return false; }
         };
+        // Cuộn tới 1 phần tử theo id + đặt focus (checkout dùng khi
+        // validation lỗi: đưa khách tới đúng ô sai đầu tiên).
+        window.ptScrollToId = function (id) {
+            var el = document.getElementById(id);
+            if (!el) { return; }
+            el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            try { el.focus({ preventScroll: true }); } catch (e) { el.focus(); }
+        };
         // Chữ lớn cho người lớn tuổi (#196).
         window.ptGetLargeText = function () {
             try { return localStorage.getItem('pt-large-text') === '1'; }

@@ -754,6 +754,20 @@ html.dark .co-phone-clear {
         padding-right: 6px;
     }
 
+    /* Bề rộng cột qua colgroup: giữ đúng tỉ lệ kể cả khi hàng đầu
+       bảng (thead) và các hàng món bị ẩn trên mobile (Phương án B). */
+    .co-summary col:nth-child(2) {
+        width: 128px;
+    }
+
+    .co-summary col:nth-child(3) {
+        width: 92px;
+    }
+
+    .co-summary col:nth-child(4) {
+        width: 44px;
+    }
+
     .co-summary .card-body {
         padding: 14px;
     }
@@ -780,3 +794,91 @@ html.dark .co-phone-clear {
     margin-bottom: 16px;
 }
 /* ===== END đợt sửa 2026-10-23 ===== */
+
+/* ===== Phương án B (đội UI/UX, 2026-10-24) =====
+   1) Danh sách món trên mobile dùng THẺ DỌC thay bảng 4 cột: bảng
+   trong card tóm tắt chỉ còn phần tổng tiền. Desktop giữ bảng. */
+.co-items-mobile {
+    display: none;
+}
+
+@media (max-width: 767.98px) {
+    .co-items-mobile {
+        display: block;
+    }
+
+    .co-items-head,
+    .co-item-row {
+        display: none;
+    }
+
+    .co-item-card {
+        border-bottom: 1px solid #e9ecef;
+        padding: 10px 0 12px;
+    }
+
+    .co-item-line {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+    }
+
+    .co-item-name {
+        font-size: 16px;
+        font-weight: 600;
+        min-width: 0;
+        word-break: break-word;
+    }
+
+    .co-item-remove {
+        flex: 0 0 auto;
+        min-width: 56px;
+    }
+
+    .co-item-bottom {
+        margin-top: 8px;
+    }
+
+    .co-item-qty {
+        display: inline-flex;
+        align-items: center;
+    }
+
+    .co-item-total {
+        font-size: 16px;
+    }
+}
+
+html.dark .co-item-card {
+    border-bottom-color: #3a3a58;
+}
+
+/* 2) Dòng bấm-mở (mã giảm giá / mã giới thiệu): cao tối thiểu 52px,
+   chữ rõ, căn trái như 1 câu hỏi — khách không có mã thì bỏ qua. */
+.co-collapse-toggle {
+    min-height: 52px;
+    font-size: 15px;
+    text-align: left;
+    white-space: normal;
+}
+
+/* 3) Thanh dính đáy: cho phép dòng lý do (khi chưa đặt được) chiếm
+   trọn 1 hàng trên cùng của thanh. */
+.co-mobile-bar {
+    flex-wrap: wrap;
+}
+
+.co-bar-reason {
+    flex: 0 0 100%;
+    color: #c82333;
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 1.4;
+    margin-bottom: 6px;
+}
+
+html.dark .co-bar-reason {
+    color: #ff9aa5;
+}
+/* ===== END Phương án B ===== */
