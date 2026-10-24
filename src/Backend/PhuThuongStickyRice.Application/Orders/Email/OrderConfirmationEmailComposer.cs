@@ -17,13 +17,14 @@ namespace PhuThuongStickyRice.Application.Orders.Email
     public static class OrderConfirmationEmailComposer
     {
         /// <summary>
-        /// Địa chỉ người gửi trên mail xác nhận đơn: Gmail chính thức của
-        /// quán. Phải trùng tài khoản SMTP đã cấu hình (Gmail chỉ cho gửi
-        /// từ chính tài khoản đã đăng nhập hoặc alias đã xác thực) — đổi
-        /// tài khoản gửi thì sửa cả ở đây lẫn Notification:Email:SmtpClient
+        /// Địa chỉ người gửi trên mail xác nhận đơn: brucethanh@gmail.com
+        /// (user chốt 2026-10-24 — dùng chung tài khoản gửi với MKWeb).
+        /// Phải trùng tài khoản SMTP đã cấu hình (Gmail chỉ cho gửi từ
+        /// chính tài khoản đã đăng nhập hoặc alias đã xác thực) — đổi tài
+        /// khoản gửi thì sửa cả ở đây lẫn Notification:Email:SmtpClient
         /// trong appsettings của BackgroundServer.
         /// </summary>
-        public const string FromAddress = "Maihuyen280579@gmail.com";
+        public const string FromAddress = "brucethanh@gmail.com";
 
         /// <summary>
         /// Dựng email xác nhận đơn hàng (HTML tiếng Việt).
