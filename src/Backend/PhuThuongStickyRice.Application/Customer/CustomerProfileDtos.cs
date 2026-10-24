@@ -14,7 +14,9 @@ namespace PhuThuongStickyRice.Application.Customer
         /// họ tên riêng nên tên được lưu dạng claim "fullName" trên bảng
         /// UserClaims có sẵn (không cần migration) — xem
         /// CustomerProfileAppService.SetFullNameAsync. Checkout dùng tên này
-        /// để tự điền ô họ tên cho khách đã đăng nhập.
+        /// để tự điền ô họ tên cho khách đã đăng nhập. Tài khoản cũ chưa có
+        /// claim: server lấy tên từ đơn hàng gần nhất của SĐT tài khoản
+        /// (GetLatestOrderNameAsync) để vẫn hiển thị được tên.
         /// </summary>
         public string FullName { get; set; }
 
@@ -51,10 +53,10 @@ namespace PhuThuongStickyRice.Application.Customer
     public class UpdateCustomerProfileDto
     {
         /// <summary>
-        /// Họ tên khách tự bổ sung/sửa ở trang tài khoản (lưu dạng claim
-        /// "fullName" qua SetFullNameAsync). null = giữ nguyên tên hiện
-        /// tại; tài khoản tạo trước 2026-10-23 chưa có tên nên checkout
-        /// không tự điền được cho tới khi khách bổ sung ở đây.
+        /// Họ tên (lưu dạng claim "fullName" qua SetFullNameAsync). Trang
+        /// tài khoản không còn cho sửa tên (user chốt 2026-10-24: họ tên
+        /// chỉ hiển thị, load từ tài khoản) nên FE gửi null; trường này
+        /// giữ cho tương thích API. null = giữ nguyên tên hiện tại.
         /// </summary>
         public string FullName { get; set; }
 

@@ -1,4 +1,5 @@
 ﻿@* Trang tài khoản khách hàng: 3 TAB (user chốt 2026-10-23) — 👤 Hồ sơ:
+   họ tên CHỈ HIỂN THỊ, load từ tài khoản (user chốt 2026-10-24);
    FORM GỘP thông tin cá nhân + ngày sinh + quà sinh nhật (item 92, đổi
    1 lần/năm chống gian lận quà) + khẩu vị (item 90 — quán tự điền vào
    ghi chú mỗi lần đặt) + sổ địa chỉ, CHỈ 1 nút "Lưu thay đổi"; dưới form
@@ -57,14 +58,12 @@
             <div class="card-body">
                 <h5 class="card-title">👤 Thông tin của tôi</h5>
                 <div class="tk-form-section">
-                    @* Họ tên sửa được tại đây (lưu dạng claim fullName): tài
-                       khoản tạo trước 2026-10-23 chưa có tên nên checkout
-                       không tự điền được — khách bổ sung 1 lần là xong. *@
-                    <div class="form-group tk-form-narrow">
-                        <label for="tk-fullname">Họ tên</label>
-                        <input id="tk-fullname" class="form-control" @bind="_profile.FullName" placeholder="VD: Nguyễn Văn A" autocomplete="name" />
-                        <small class="text-muted">Tên này sẽ tự điền ở bước thanh toán khi bạn đặt hàng.</small>
-                    </div>
+                    @* Họ tên CHỈ HIỂN THỊ (user chốt 2026-10-24): load từ
+                       tài khoản (claim fullName lúc đăng ký; tài khoản cũ
+                       chưa có claim thì server lấy tên từ đơn hàng gần
+                       nhất của SĐT) — không cho khách sửa tại đây như SĐT
+                       và vai trò. *@
+                    <p class="mb-1"><strong>Họ tên:</strong> @(string.IsNullOrWhiteSpace(_profile.FullName) ? "Chưa cập nhật" : _profile.FullName)</p>
                     <p class="mb-1"><strong>Số điện thoại:</strong> @_userName</p>
                     @if (!string.IsNullOrWhiteSpace(_email))
                     {
@@ -287,6 +286,16 @@
                 {
                     <p class="text-muted"><em>Đang tải lịch sử đơn hàng...</em></p>
                 }
+                else if (_ordersFailed)
+                {
+                    @* Lỗi tải phải nói rõ + cho thử lại — trước đây lỗi bị
+                       nuốt thành danh sách trống khiến khách tưởng mình
+                       chưa có đơn nào (user báo 2026-10-24). *@
+                    <div class="alert alert-danger" role="alert">
+                        Không tải được lịch sử đơn hàng.
+                        <button type="button" class="btn btn-sm btn-outline-danger ml-2" @onclick="LoadOrdersAsync">Thử lại</button>
+                    </div>
+                }
                 else if (_orders.Count == 0)
                 {
                     <p class="text-muted">Bạn chưa có đơn hàng nào. <a href="/shop">Đặt xôi ngay →</a></p>
@@ -410,6 +419,7 @@
     private LoyaltyAccountModel _loyalty;
     private bool _loyaltyFailed;
     private List<TrackedOrderModel> _orders;
+    private bool _ordersFailed;
     private bool _reorderBusy;
 
     protected override async Task OnInitializedAsync()
@@ -518,16 +528,23 @@
         }
     }
 
-    /// <summary>Tải lịch sử đơn hàng theo SĐT — lỗi thì hiện danh sách trống.</summary>
+    /// <summary>
+    /// Tải lịch sử đơn hàng theo SĐT của tài khoản (server trả bản đầy đủ
+    /// cho chủ SĐT đã đăng nhập). Lỗi thì bật _ordersFailed để tab Đơn
+    /// hàng báo lỗi + nút "Thử lại" thay vì hiện "chưa có đơn nào" sai
+    /// sự thật (user báo 2026-10-24).
+    /// </summary>
     private async Task LoadOrdersAsync()
     {
         try
         {
             _orders = await ShopService.GetOrdersByPhoneAsync(_userName) ?? new List<TrackedOrderModel>();
+            _ordersFailed = false;
         }
         catch (Exception)
         {
             _orders = new List<TrackedOrderModel>();
+            _ordersFailed = true;
         }
     }
 

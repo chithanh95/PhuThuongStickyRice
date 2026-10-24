@@ -49,7 +49,18 @@ namespace PhuThuongStickyRice.Web.Components.Shop.Services
         public async Task<CustomerProfileModel> UpdateAsync(CustomerProfileModel model)
         {
             await SetBearerToken();
-            var response = await _httpClient.PutAsJsonAsync("api/customer/profile", model);
+            // Họ tên CHỈ HIỂN THỊ ở trang tài khoản (user chốt 2026-10-24)
+            // nên không gửi lên khi lưu hồ sơ: gửi null để server giữ
+            // nguyên claim tên — tránh ghi đè tên tài khoản bằng giá trị
+            // hiển thị (vốn có thể là tên dự phòng từ đơn hàng gần nhất).
+            var payload = new CustomerProfileModel
+            {
+                FullName = null,
+                TasteTags = model.TasteTags,
+                TasteNote = model.TasteNote,
+                DateOfBirth = model.DateOfBirth,
+            };
+            var response = await _httpClient.PutAsJsonAsync("api/customer/profile", payload);
             if (!response.IsSuccessStatusCode)
             {
                 throw new InvalidOperationException(await HttpErrorMessageReader.ReadErrorMessageAsync(

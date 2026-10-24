@@ -141,6 +141,11 @@ do admin upload). DataProtection keys lưu trong database nên nhiều instance 
 
 ## Nhật ký thay đổi
 
+### 2026-10-24 (tối) — Trang tài khoản: họ tên chỉ hiển thị + tab Đơn hàng báo lỗi rõ
+
+- **Họ tên ở tab Hồ sơ chuyển từ ô nhập sửa được sang CHỈ HIỂN THỊ** (user chốt): tên load từ tài khoản — claim "fullName" lưu lúc đăng ký; tài khoản cũ chưa có claim thì server tự lấy **tên trên đơn hàng gần nhất của SĐT tài khoản** để vẫn hiển thị được (trước đây các tài khoản này hiện ô trống bắt nhập lại). Tên hiển thị này cũng là tên checkout tự điền. Khi lưu hồ sơ (khẩu vị/ngày sinh), FE không gửi họ tên lên nữa để không ghi đè tên tài khoản.
+- **Tab Đơn hàng**: khi tải lịch sử thất bại, trang báo lỗi kèm nút **"Thử lại"** thay vì hiện "Bạn chưa có đơn hàng nào" như trước (lỗi cũ bị nuốt thành danh sách trống). Lịch sử vẫn tải sẵn theo SĐT tài khoản ngay khi mở trang và server trả bản đầy đủ cho chủ SĐT đã đăng nhập.
+
 ### 2026-10-24 — Chuẩn bị sẵn cấu hình Gmail để gửi email thật (chờ App Password)
 - Hệ thống email (xác nhận đơn cho khách, báo cáo chủ quán, cảnh báo hệ thống) trước đây để nhà cung cấp **"Fake"** — mail chỉ được soạn và xếp hàng chứ không gửi ra ngoài. Nay đã cấu hình sẵn **Gmail SMTP** trong `appsettings.json` của BackgroundServer (`Notification:Email`): Provider `SmtpClient`, host `smtp.gmail.com`, port 587, SSL bật, tài khoản gửi **brucethanh@gmail.com** (user chốt chiều 24/10 — dùng chung tài khoản gửi với MKWeb; email liên hệ hiển thị trên web vẫn là Maihuyen280579@gmail.com); địa chỉ người gửi (From) của cả 3 loại mail cũng đổi từ domain cũ (`no-reply@phuthuong.vn`, `noreply@xoiphuthuong.vn`) về đúng Gmail này (Gmail chỉ cho gửi từ tài khoản đã đăng nhập/alias đã xác thực).
 - **Việc còn lại để gửi được thật (làm 1 lần trên máy chạy BackgroundServer)**: tạo App Password trong tài khoản Google brucethanh (bắt buộc bật xác minh 2 bước trước), rồi đặt biến môi trường `Notification__Email__SmtpClient__Password` = App Password đó và khởi động lại BackgroundServer. **Không ghi mật khẩu vào appsettings/repo** (repo public). Chưa đặt mật khẩu thì BackgroundServer gửi thất bại, mail nằm lại trong hàng đợi EmailMessage — luồng đặt hàng không bị ảnh hưởng.

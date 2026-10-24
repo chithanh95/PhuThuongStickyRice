@@ -91,6 +91,7 @@ namespace PhuThuongStickyRice.Application.Customer
 
         private readonly IRepository<User, Guid> _users;
         private readonly IRepository<UserClaim, Guid> _claims;
+        private readonly IRepository<Order, Guid> _orders;
         private readonly IRepository<UserRole, Guid> _userRoles;
         private readonly IRepository<Role, Guid> _roles;
         private readonly IRepository<DiscountCode, Guid> _discounts;
@@ -102,6 +103,7 @@ namespace PhuThuongStickyRice.Application.Customer
         public CustomerProfileAppService(
             IRepository<User, Guid> users,
             IRepository<UserClaim, Guid> claims,
+            IRepository<Order, Guid> orders,
             IRepository<UserRole, Guid> userRoles,
             IRepository<Role, Guid> roles,
             IRepository<DiscountCode, Guid> discounts,
@@ -112,6 +114,7 @@ namespace PhuThuongStickyRice.Application.Customer
         {
             _users = users;
             _claims = claims;
+            _orders = orders;
             _userRoles = userRoles;
             _roles = roles;
             _discounts = discounts;
@@ -133,6 +136,15 @@ namespace PhuThuongStickyRice.Application.Customer
             dto.PhoneNumber = user.PhoneNumber;
             dto.Email = user.Email;
             dto.FullName = await GetFullNameAsync(user.Id);
+            if (string.IsNullOrWhiteSpace(dto.FullName))
+            {
+                // Tài khoản tạo trước 2026-10-23 chưa từng được lưu tên
+                // (hồi đó đăng ký bỏ mất họ tên): lấy tên từ đơn hàng gần
+                // nhất của chính SĐT tài khoản để trang tài khoản/checkout
+                // vẫn có tên hiển thị (user chốt 2026-10-24: họ tên phải
+                // LOAD RA từ dữ liệu của tài khoản, không bắt khách nhập).
+                dto.FullName = await GetLatestOrderNameAsync(user.PhoneNumber);
+            }
             ParseTaste(user.TastePreferences, dto);
             dto.DateOfBirth = user.DateOfBirth;
             dto.CanChangeDateOfBirth = CanChangeDob(user, out var hint);
@@ -171,6 +183,40 @@ namespace PhuThuongStickyRice.Application.Customer
                 var claim = await _asyncExecuter.FirstOrDefaultAsync(
                     queryable.Where(c => c.User.Id == userId && c.Type == FullNameClaimType));
                 return string.IsNullOrWhiteSpace(claim?.Value) ? null : claim.Value;
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// Tên khách trên đơn hàng GẦN NHẤT gắn với SĐT cho trước — nguồn
+        /// dự phòng khi tài khoản chưa có claim họ tên (tài khoản cũ tạo
+        /// trước khi đăng ký lưu tên). Khớp đơn theo 9 số cuối
+        /// (CustomerPhoneNorm) như các luồng tra cứu theo SĐT khác.
+        /// Fail-soft: lỗi đọc đơn thì coi như không có tên.
+        /// </summary>
+        /// <param name="phone">SĐT của tài khoản.</param>
+        /// <returns>Tên khách trên đơn gần nhất, hoặc null.</returns>
+        private async Task<string> GetLatestOrderNameAsync(string phone)
+        {
+            try
+            {
+                var digits = PhoneNumber.DigitsOnly(phone);
+                if (digits.Length < PhoneNumber.TailDigitCount)
+                {
+                    return null;
+                }
+
+                var suffix = digits[^PhoneNumber.TailDigitCount..];
+                var queryable = await _orders.GetQueryableAsync();
+                var latest = await _asyncExecuter.FirstOrDefaultAsync(
+                    queryable
+                        .Where(o => o.CustomerPhoneNorm == suffix
+                                    && o.CustomerName != null && o.CustomerName != string.Empty)
+                        .OrderByDescending(o => o.CreatedDateTime));
+                return string.IsNullOrWhiteSpace(latest?.CustomerName) ? null : latest.CustomerName;
             }
             catch (Exception)
             {
@@ -252,9 +298,11 @@ namespace PhuThuongStickyRice.Application.Customer
                 }
             }
 
-            // Họ tên: trang tài khoản gửi kèm trong cùng DTO để khách tự
-            // bổ sung/sửa (lưu dạng claim qua SetFullNameAsync). null =
-            // khách không đổi tên; có giá trị thì đồng bộ claim.
+            // Họ tên: DTO còn nhận để tương thích API (lưu dạng claim qua
+            // SetFullNameAsync) nhưng trang tài khoản KHÔNG còn sửa tên —
+            // user chốt 2026-10-24 họ tên chỉ hiển thị, lấy từ tài khoản;
+            // FE gửi null nên nhánh này thường không chạy. null = giữ
+            // nguyên tên hiện tại; có giá trị thì đồng bộ claim.
             if (dto.FullName != null)
             {
                 await SetFullNameAsync(user.Id, dto.FullName);
