@@ -58,12 +58,15 @@
             <div class="card-body">
                 <h5 class="card-title">👤 Thông tin của tôi</h5>
                 <div class="tk-form-section">
-                    @* Họ tên CHỈ HIỂN THỊ (user chốt 2026-10-24): load từ
-                       tài khoản (claim fullName lúc đăng ký; tài khoản cũ
-                       chưa có claim thì server lấy tên từ đơn hàng gần
-                       nhất của SĐT) — không cho khách sửa tại đây như SĐT
-                       và vai trò. *@
-                    <p class="mb-1"><strong>Họ tên:</strong> @(string.IsNullOrWhiteSpace(_profile.FullName) ? "Chưa cập nhật" : _profile.FullName)</p>
+                    @* Họ tên READONLY (user chốt 2026-10-24): load từ tài
+                       khoản (claim fullName lúc đăng ký; tài khoản cũ chưa
+                       có claim thì server lấy tên từ đơn hàng gần nhất
+                       của SĐT) — hiển thị trong ô nhưng không cho sửa. *@
+                    <div class="form-group tk-form-narrow">
+                        <label for="tk-fullname">Họ tên</label>
+                        <input id="tk-fullname" class="form-control" value="@_profile.FullName" placeholder="Chưa cập nhật" readonly autocomplete="name" />
+                        <small class="text-muted">Tên lấy từ tài khoản của bạn, dùng để tự điền khi đặt hàng.</small>
+                    </div>
                     <p class="mb-1"><strong>Số điện thoại:</strong> @_userName</p>
                     @if (!string.IsNullOrWhiteSpace(_email))
                     {
@@ -529,16 +532,17 @@
     }
 
     /// <summary>
-    /// Tải lịch sử đơn hàng theo SĐT của tài khoản (server trả bản đầy đủ
-    /// cho chủ SĐT đã đăng nhập). Lỗi thì bật _ordersFailed để tab Đơn
-    /// hàng báo lỗi + nút "Thử lại" thay vì hiện "chưa có đơn nào" sai
-    /// sự thật (user báo 2026-10-24).
+    /// Tải lịch sử đơn hàng của tài khoản qua endpoint api/orders/mine
+    /// (server lấy SĐT từ JWT — đã đăng nhập là thấy lịch sử, không qua
+    /// endpoint tra cứu công khai theo SĐT). Lỗi thì bật _ordersFailed
+    /// để tab Đơn hàng báo lỗi + nút "Thử lại" thay vì hiện "chưa có
+    /// đơn nào" sai sự thật (user báo 2026-10-24).
     /// </summary>
     private async Task LoadOrdersAsync()
     {
         try
         {
-            _orders = await ShopService.GetOrdersByPhoneAsync(_userName) ?? new List<TrackedOrderModel>();
+            _orders = await ShopService.GetMyOrdersAsync() ?? new List<TrackedOrderModel>();
             _ordersFailed = false;
         }
         catch (Exception)

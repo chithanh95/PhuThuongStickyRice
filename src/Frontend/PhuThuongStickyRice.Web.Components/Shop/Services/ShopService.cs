@@ -425,6 +425,35 @@ namespace PhuThuongStickyRice.Web.Components.Shop.Services
         }
 
         /// <summary>
+        /// Lịch sử đơn của khách ĐANG ĐĂNG NHẬP (trang tài khoản): gọi
+        /// endpoint api/orders/mine — server tự lấy SĐT từ JWT, client
+        /// không truyền SĐT như GetOrdersByPhoneAsync của trang tra cứu
+        /// công khai. Lỗi HTTP: ném <see cref="InvalidOperationException"/>
+        /// kèm thông điệp thật của server để trang hiển thị.
+        /// </summary>
+        /// <returns>Danh sách đơn đầy đủ của tài khoản đang đăng nhập.</returns>
+        public async Task<List<TrackedOrderModel>> GetMyOrdersAsync()
+        {
+            using var request = new HttpRequestMessage(HttpMethod.Get, "api/orders/mine");
+            var token = (await _tokenStore.GetToken())?.AccessToken;
+            if (!string.IsNullOrWhiteSpace(token))
+            {
+                request.Headers.Authorization =
+                    new AuthenticationHeaderValue("Bearer", token);
+            }
+
+            using var response = await _httpClient.SendAsync(request);
+            if (!response.IsSuccessStatusCode)
+            {
+                var body = await response.Content.ReadAsStringAsync();
+                throw new InvalidOperationException(
+                    ParseServerMessage(body) ?? "Không tải được lịch sử đơn hàng. Vui lòng thử lại sau.");
+            }
+
+            return await response.Content.ReadAs<List<TrackedOrderModel>>();
+        }
+
+        /// <summary>
         /// Trích property "message" từ body lỗi JSON của server (dạng
         /// { "message": "..." }); null khi body không đúng dạng — caller
         /// dùng thông báo mặc định.

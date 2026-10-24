@@ -403,6 +403,29 @@ namespace PhuThuongStickyRice.WebAPI.Controllers
         }
 
         /// <summary>
+        /// Lịch sử đơn của CHÍNH khách đang đăng nhập (trang tài khoản):
+        /// SĐT lấy từ JWT (username của khách) — client không truyền SĐT
+        /// nên tab Đơn hàng không phụ thuộc cơ chế khớp chủ SĐT của
+        /// endpoint công khai by-phone (user chốt 2026-10-24: đã đăng
+        /// nhập là phải thấy lịch sử đặt hàng). Nhân viên đăng nhập bằng
+        /// email, username không phải SĐT khách → trả danh sách trống.
+        /// </summary>
+        [Authorize]
+        [HttpGet("mine")]
+        public async Task<ActionResult> GetMine()
+        {
+            var phone = User?.Identity?.Name;
+            var digits = PhoneNumber.DigitsOnly(phone);
+            if (!System.Text.RegularExpressions.Regex.IsMatch(digits, @"^(0)(3|5|7|8|9)\d{8}$"))
+            {
+                return Ok(new object[0]);
+            }
+
+            var orders = await _orderAppService.GetOrdersByPhoneAsync(phone);
+            return Ok(orders);
+        }
+
+        /// <summary>
         /// Customer reports they sent the bank transfer. Public, but the
         /// phone in the body must match the order's phone.
         /// </summary>
