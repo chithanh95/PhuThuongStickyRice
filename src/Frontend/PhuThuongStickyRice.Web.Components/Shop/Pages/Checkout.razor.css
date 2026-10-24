@@ -709,7 +709,15 @@ html.dark .co-phone-clear {
    rộng card → card-body cuộn ngang, khách chỉ thấy phần trái của bảng,
    cột × bị đẩy ra ngoài màn hình. Khóa table-layout: fixed + width 100%
    và chia sẵn bề rộng cột: bảng luôn vừa đúng card, tên món dài tự
-   xuống dòng. */
+   xuống dòng.
+   BỔ SUNG 2026-10-24 (user báo card tóm tắt vẫn vỡ): các dòng TỔNG
+   (tạm tính/giảm giá/phí ship/tổng cộng) trước đây để nhãn colspan=3 +
+   số tiền ở ô thứ 4 — với layout fixed, ô thứ 4 chỉ rộng 48px (cột ×)
+   nên số tiền bị ép/clip. Markup đã đổi: nhãn colspan=2, số tiền
+   colspan=2 (dùng chung bề rộng cột 3+4 = 136px). Đồng thời: giảm
+   padding ngang của ô + padding card-body để cột tên món rộng hơn,
+   chữ trong các alert của card tóm tắt (điểm thành viên...) lên 14px
+   dễ đọc (trước bọc <small> ~11px rất chật). */
 @media (max-width: 767.98px) {
     .co-summary table {
         table-layout: fixed;
@@ -723,21 +731,36 @@ html.dark .co-phone-clear {
 
     .co-summary th:nth-child(2),
     .co-summary td:nth-child(2) {
-        width: 132px;
+        width: 128px;
     }
 
     .co-summary th:nth-child(3),
     .co-summary td:nth-child(3) {
-        width: 84px;
+        width: 92px;
     }
 
     .co-summary th:nth-child(4),
     .co-summary td:nth-child(4) {
-        width: 48px;
+        width: 44px;
     }
 
     .co-summary td:first-child {
         word-break: break-word;
+    }
+
+    .co-summary th,
+    .co-summary td {
+        padding-left: 6px;
+        padding-right: 6px;
+    }
+
+    .co-summary .card-body {
+        padding: 14px;
+    }
+
+    .co-summary .alert small {
+        font-size: 14px;
+        line-height: 1.55;
     }
 }
 

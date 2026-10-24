@@ -659,21 +659,21 @@ else
                                 </tr>
                             }
                             <tr>
-                                <td class="text-muted" colspan="3">@AppLocalizationService.Translate("shop.subtotal")</td>
-                                <td class="text-right text-muted">@FormatPrice(_subtotal)</td>
+                                <td class="text-muted" colspan="2">@AppLocalizationService.Translate("shop.subtotal")</td>
+                                <td class="text-right text-muted" colspan="2">@FormatPrice(_subtotal)</td>
                             </tr>
                             @if (_activePromotion != null)
                             {
                                 <tr>
-                                    <td class="text-success" colspan="3">🏷 Khuyến mãi giờ vàng (@_activePromotion.Name) −@_activePromotion.DiscountPercent%</td>
-                                    <td class="text-right text-success">−@FormatPrice(_promotionDiscountPreview)</td>
+                                    <td class="text-success" colspan="2">🏷 Khuyến mãi giờ vàng (@_activePromotion.Name) −@_activePromotion.DiscountPercent%</td>
+                                    <td class="text-right text-success" colspan="2">−@FormatPrice(_promotionDiscountPreview)</td>
                                 </tr>
                             }
                             @if (_discountAmount > 0)
                             {
                                 <tr>
-                                    <td class="text-success" colspan="3">Giảm giá (@_appliedCode)</td>
-                                    <td class="text-right text-success">−@FormatPrice(_discountAmount)</td>
+                                    <td class="text-success" colspan="2">Giảm giá (@_appliedCode)</td>
+                                    <td class="text-right text-success" colspan="2">−@FormatPrice(_discountAmount)</td>
                                 </tr>
                             }
                             @if (_isFreeship)
@@ -682,22 +682,22 @@ else
                                    (xem _fee bên dưới và OrderAppService: feeValue = 0 với
                                    ShipperPickup/Pickup) — không hiển thị số "−DeliveryFee" ảo. *@
                                 <tr>
-                                    <td class="text-success" colspan="3">🚚 Miễn phí ship (@_appliedCode)</td>
-                                    <td class="text-right text-success">Miễn phí</td>
+                                    <td class="text-success" colspan="2">🚚 Miễn phí ship (@_appliedCode)</td>
+                                    <td class="text-right text-success" colspan="2">Miễn phí</td>
                                 </tr>
                             }
                             @if (_tierDiscountPreview > 0)
                             {
                                 <tr>
-                                    <td class="text-success" colspan="3">Ưu đãi hạng @_loyalty.Tier (@_loyalty.TierDiscountPercent%)</td>
-                                    <td class="text-right text-success">−@FormatPrice(_tierDiscountPreview)</td>
+                                    <td class="text-success" colspan="2">Ưu đãi hạng @_loyalty.Tier (@_loyalty.TierDiscountPercent%)</td>
+                                    <td class="text-right text-success" colspan="2">−@FormatPrice(_tierDiscountPreview)</td>
                                 </tr>
                             }
                             @if (_redeemDiscountPreview > 0)
                             {
                                 <tr>
-                                    <td class="text-success" colspan="3">Đổi @_redeemPoints điểm</td>
-                                    <td class="text-right text-success">−@FormatPrice(_redeemDiscountPreview)</td>
+                                    <td class="text-success" colspan="2">Đổi @_redeemPoints điểm</td>
+                                    <td class="text-right text-success" colspan="2">−@FormatPrice(_redeemDiscountPreview)</td>
                                 </tr>
                             }
                             @* Item 125: tổng tiết kiệm — cộng mọi khoản giảm để khách "thấy" được lợi.
@@ -710,12 +710,12 @@ else
                             @if (totalSaved > 0)
                             {
                                 <tr class="table-success">
-                                    <td class="text-success font-weight-bold" colspan="3">💰 Bạn tiết kiệm được</td>
-                                    <td class="text-right text-success font-weight-bold">@FormatPrice(totalSaved)</td>
+                                    <td class="text-success font-weight-bold" colspan="2">💰 Bạn tiết kiệm được</td>
+                                    <td class="text-right text-success font-weight-bold" colspan="2">@FormatPrice(totalSaved)</td>
                                 </tr>
                             }
                             <tr>
-                                <td class="text-muted" colspan="3">
+                                <td class="text-muted" colspan="2">
                                     🚚 Phí giao hàng
                                     <small class="d-block text-success">Quán không giao hàng — miễn phí ship</small>
                                     @if (_shopSettings.EstimatedDeliveryMinutes > 0)
@@ -723,15 +723,15 @@ else
                                         <small class="d-block text-muted">⏱ Dự kiến chuẩn bị: ~@_shopSettings.EstimatedDeliveryMinutes phút</small>
                                     }
                                 </td>
-                                <td class="text-right text-success">
+                                <td class="text-right text-success" colspan="2">
                                     Miễn phí
                                 </td>
                             </tr>
                         </tbody>
                         <tfoot>
                             <tr>
-                                <td colspan="3"><strong>@AppLocalizationService.Translate("common.total")</strong></td>
-                                <td class="text-right"><strong class="text-danger">@FormatPrice(_grandTotal)</strong></td>
+                                <td colspan="2"><strong>@AppLocalizationService.Translate("common.total")</strong></td>
+                                <td class="text-right" colspan="2"><strong class="text-danger">@FormatPrice(_grandTotal)</strong></td>
                             </tr>
                         </tfoot>
                     </table>
@@ -850,7 +850,11 @@ else
                         </div>
                     }
 
-                    <button class="btn btn-success btn-block btn-lg co-flow-submit" @onclick="PlaceOrder" disabled="@(_submitting || _minOrderBlocked || _orderingBlocked)">
+                    @* Nút đặt hàng trong luồng: trên mobile PHẢI ẩn (đã có thanh
+                       sticky dưới cùng) — ẩn bằng 2 lớp độc lập: rule CSS
+                       .co-flow-submit và class tiện ích d-none/d-md-block,
+                       để không bao giờ hiện 2 nút "Đặt hàng ngay" cùng lúc. *@
+                    <button class="btn btn-success btn-block btn-lg co-flow-submit d-none d-md-block" @onclick="PlaceOrder" disabled="@(_submitting || _minOrderBlocked || _orderingBlocked)">
                         @(_submitting ? AppLocalizationService.Translate("shop.processing") : AppLocalizationService.Translate("shop.order_now"))
                     </button>
                     @if (_orderingBlocked && !string.IsNullOrEmpty(_closedNotice))

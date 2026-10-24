@@ -141,6 +141,11 @@ do admin upload). DataProtection keys lưu trong database nên nhiều instance 
 
 ## Nhật ký thay đổi
 
+### 2026-10-24 (tối, tiếp 3) — Sửa vỡ bố cục card "Đơn hàng của bạn" ở checkout trên mobile
+
+- **Lỗi thật trong code**: các dòng tổng của bảng tóm tắt (tạm tính, giảm giá, phí giao hàng, tổng cộng) để nhãn `colspan=3` + số tiền ở ô thứ 4; trên mobile bảng khóa `table-layout: fixed` với cột 4 chỉ 44–48px (cột nút ×) nên **số tiền bị ép vào ô ~48px**, vỡ/clip. Đã đổi markup: nhãn `colspan=2`, số tiền `colspan=2` (dùng bề rộng cột 3+4 ≈ 136px); chỉnh lại bề rộng cột (SL 128px, thành tiền 92px, × 44px), giảm padding ngang của ô và padding card để cột tên món rộng hơn; chữ trong các hộp thông tin của card (điểm thành viên, mã giới thiệu…) lên **14px** dễ đọc (trước ~11px).
+- Nút "Đặt hàng ngay" trong card được ẩn trên mobile bằng **thêm một lớp độc lập** (class tiện ích `d-none d-md-block`, bên cạnh rule CSS sẵn có) — trên mobile chỉ còn nút ở thanh cố định dưới cùng, không bao giờ hiện 2 nút cùng lúc.
+
 ### 2026-10-24 (tối, tiếp 2) — Sửa kẹt đăng nhập admin khi trình duyệt đang có phiên khách
 
 - **Lỗi**: đang đăng nhập tài khoản **khách** ở shop mà mở trang đăng nhập nhân viên `/login` (hoặc bấm vào trang admin bị đá về `/login`) thì bị đẩy đi ngay — không bao giờ thấy form đăng nhập admin (trang `/login` cũ cứ có phiên đăng nhập bất kỳ là redirect theo returnUrl/trang chủ; kèm returnUrl admin thì thành vòng lặp admin ↔ login). Nay `/login` chỉ tự redirect khi phiên hiện tại là **nhân viên**; phiên khách thì ở lại form kèm dòng ghi chú "đang đăng nhập bằng tài khoản khách … — đăng nhập nhân viên sẽ thay thế phiên hiện tại", đăng nhập thành công là vào thẳng trang admin đích.
